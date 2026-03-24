@@ -1,5 +1,47 @@
 import type { DailyNotesNGSettings } from './settings/types';
 
+/**
+ * Default .base MOC template for periodic note folders.
+ * Uses file.inFolder(this.file.folder) so it's portable — works in any folder.
+ */
+export const DEFAULT_BASE_MOC_TEMPLATE = `filters:
+  and:
+    - file.inFolder(this.file.folder)
+    - 'file.ext == "md"'
+
+formulas:
+  day_of_week: 'date(file.basename).format("dddd")'
+  word_estimate: '(file.size / 5).round(0)'
+  created_fmt: 'file.ctime.format("MMM D, YYYY")'
+
+properties:
+  formula.day_of_week:
+    displayName: "Day"
+  formula.word_estimate:
+    displayName: "~Words"
+  formula.created_fmt:
+    displayName: "Created"
+
+views:
+  - type: table
+    name: "Recent"
+    limit: 30
+    order:
+      - file.name
+      - formula.day_of_week
+      - formula.word_estimate
+      - tags
+      - formula.created_fmt
+
+  - type: cards
+    name: "Cards"
+    limit: 30
+    order:
+      - file.name
+      - formula.day_of_week
+      - tags
+`;
+
 export const DEFAULT_SETTINGS: DailyNotesNGSettings = {
   periodic: {
     daily: {
@@ -65,6 +107,11 @@ export const DEFAULT_SETTINGS: DailyNotesNGSettings = {
   navigation: {
     showBreadcrumbs: true,
     prevNextInHeader: true,
+  },
+  folderNotes: {
+    enabled: false,
+    autoGenerateBaseMoc: true,
+    baseMocTemplate: '',
   },
   identity: {
     enabled: false,

@@ -19,6 +19,7 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
     containerEl.empty();
 
     this.renderPeriodicSection(containerEl);
+    this.renderFolderNotesSection(containerEl);
     this.renderCalendarSection(containerEl);
     this.renderIdentitySection(containerEl);
     this.renderRolloverSection(containerEl);
@@ -76,6 +77,37 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
           );
       }
     }
+  }
+
+  private renderFolderNotesSection(containerEl: HTMLElement): void {
+    new Setting(containerEl).setName('Folder notes').setHeading();
+
+    new Setting(containerEl)
+      .setName('Folder-note mode')
+      .setDesc(
+        'Each periodic note becomes a folder, allowing attachments to nest under it. ' +
+        'Works with LostPaul\'s Folder Notes plugin. ' +
+        'Off: Journal/Daily/2026-03-24.md — ' +
+        'On: Journal/Daily/2026-03-24/2026-03-24.md'
+      )
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.folderNotes.enabled).onChange(async (value) => {
+          this.plugin.settings.folderNotes.enabled = value;
+          await this.plugin.saveSettings();
+        })
+      );
+
+    new Setting(containerEl)
+      .setName('Auto-generate periodic index')
+      .setDesc(
+        'Creates a .base file in each periodic folder as a dashboard showing all notes in that folder'
+      )
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.folderNotes.autoGenerateBaseMoc).onChange(async (value) => {
+          this.plugin.settings.folderNotes.autoGenerateBaseMoc = value;
+          await this.plugin.saveSettings();
+        })
+      );
   }
 
   private renderCalendarSection(containerEl: HTMLElement): void {

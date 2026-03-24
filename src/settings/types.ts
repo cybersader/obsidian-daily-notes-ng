@@ -68,6 +68,11 @@ export interface DailyNotesNGSettings {
     showBreadcrumbs: boolean;
     prevNextInHeader: boolean;
   };
+  folderNotes: {
+    enabled: boolean;
+    autoGenerateBaseMoc: boolean;
+    baseMocTemplate: string;
+  };
   identity: {
     enabled: boolean;
     deviceUserMappings: DeviceUserMapping[];
