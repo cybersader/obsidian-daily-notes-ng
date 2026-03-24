@@ -1,0 +1,89 @@
+---
+title: Glossary
+description: Terminology and concepts used throughout Daily Notes NG
+sidebar:
+  order: 1
+---
+
+## Core concepts
+
+### Periodicity
+One of five time granularities: **daily**, **weekly**, **monthly**, **quarterly**, or **yearly**. Each periodicity has its own folder, filename format, and template. See [periodic notes](/obsidian-daily-notes-ng/features/periodic-notes/).
+
+### Periodic note
+A note created for a specific date and [periodicity](#periodicity). For example, `2026-03-24.md` is a daily periodic note. The filename is derived from the configured [Moment.js format string](https://momentjs.com/docs/#/displaying/format/).
+
+### Periodic config
+The settings for a single [periodicity](#periodicity): `enabled`, `folder`, `format`, and `templatePath`. These can be overridden per-person or per-device. See [resolution chain](#resolution-chain).
+
+## Identity system
+
+### Device ID
+A UUID v4 generated once per Obsidian installation and stored in `localStorage` (never synced). It uniquely identifies *this device* so the plugin knows who is using the vault. See [multi-user identity](/obsidian-daily-notes-ng/features/identity/).
+
+### Person note
+A markdown note with `type: person` in its frontmatter. Represents a human user of the vault. Person notes can contain per-person [periodic config](#periodic-config) overrides in a `periodic` frontmatter block.
+
+```yaml
+---
+type: person
+title: Alice Smith
+timezone: America/New_York
+---
+```
+
+### Group note
+A markdown note with `type: group` in its frontmatter. Contains a `members` list of wikilinks to [person notes](#person-note) or other group notes. Groups are resolved recursively with cycle detection (max depth 10).
+
+```yaml
+---
+type: group
+title: Dev Team
+members:
+  - "[[Alice Smith]]"
+  - "[[Bob Jones]]"
+---
+```
+
+### Device-to-user mapping
+A record linking a [device ID](#device-id) to a [person note](#person-note) path. Stored in plugin settings (synced across devices). Created when you "register" a device in the identity settings.
+
+### Resolution chain
+The priority order used to determine effective settings for a given periodicity. Higher layers override lower layers. Only non-undefined fields from a layer override the layer below.
+
+```
+1. Device preferences   (localStorage, highest priority)
+2. Person frontmatter   (periodic block in person note)
+3. Settings overrides   (personPeriodicOverrides array)
+4. Vault-wide config    (settings.periodic[periodicity])
+```
+
+See [resolution chain details](/obsidian-daily-notes-ng/features/identity/#resolution-chain).
+
+### Person interpolation
+The `{{person}}` placeholder in folder paths, resolved at runtime to the current user's display name. For example, `Journal/{{person}}/Daily` becomes `Journal/Alice Smith/Daily` on Alice's device.
+
+### Creator attribution
+Automatic insertion of a frontmatter field (default: `creator`) linking to the current user's [person note](#person-note) when a new periodic note is created.
+
+### Note UUID
+A stable UUID v4 stored in a note's frontmatter (default property: `dnngId`). Survives file renames and moves. Used for reliable cross-references.
+
+## Template system
+
+### Template context
+The set of variables available for substitution in templates. Built-in variables: `{{title}}`, `{{date}}`, `{{time}}`, `{{person}}`.
+
+### Templater bridge
+The integration layer that detects the [Templater plugin](https://github.com/SilentVoid13/Templater) and delegates template processing to it. When Templater is installed, you can use `<% %>` syntax in periodic note templates.
+
+## Testing
+
+### Test vault
+The `dnng-test-vault/` directory inside the project. Contains the plugin build output and sample data. Opened in Obsidian for manual and CLI-based testing.
+
+### Test fixtures plugin
+A separate companion plugin (`daily-notes-ng-test-fixtures`) that generates and cleans up sample data in the test vault via Obsidian commands. See [test fixtures](/obsidian-daily-notes-ng/development/test-fixtures/).
+
+### Obsidian CLI
+The official Obsidian command-line interface (v1.12+). Used for automated testing: reloading plugins, executing commands, inspecting state, and taking screenshots without leaving the terminal. See [testing workflow](/obsidian-daily-notes-ng/development/testing/).

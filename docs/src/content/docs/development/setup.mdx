@@ -1,0 +1,101 @@
+---
+title: Development setup
+description: How to set up the development environment for Daily Notes NG
+sidebar:
+  order: 1
+---
+
+## Prerequisites
+
+- [Bun](https://bun.sh) (package manager and runtime)
+- [Obsidian](https://obsidian.md) 1.12+ (with CLI support)
+- Git
+
+## Clone and install
+
+```bash
+git clone https://github.com/cybersader/obsidian-daily-notes-ng.git
+cd obsidian-daily-notes-ng
+bun install
+```
+
+## Project structure
+
+```
+obsidian-daily-notes-ng/
+├── src/                          # Plugin source code
+│   ├── main.ts                   # Plugin entry point
+│   ├── constants.ts              # Default settings
+│   ├── settings/                 # Settings tab and types
+│   ├── periodic/                 # Periodic note creation and navigation
+│   ├── calendar/                 # Calendar sidebar (ItemView)
+│   ├── templates/                # Template engine + Templater bridge
+│   ├── navigation/               # Command palette commands
+│   ├── rollover/                 # Todo rollover logic
+│   ├── frontmatter/              # Date tracking in frontmatter
+│   ├── nlp/                      # Natural language date parsing (chrono-node)
+│   ├── identity/                 # Multi-user identity system
+│   ├── compat/                   # Periodic Notes migration
+│   └── utils/                    # Debug logging, deep merge
+├── tests/                        # Unit tests (Bun test runner)
+├── e2e/                          # E2E tests (Playwright + CDP)
+├── dnng-test-vault/              # Embedded test vault
+├── docs/                         # This documentation (Astro Starlight)
+├── .claude/                      # Agent instructions and skills
+│   ├── CLAUDE.md                 # Project-specific agent instructions
+│   └── skills/obsidian-cli/      # Obsidian CLI skill for testing
+└── .github/workflows/            # CI: release + docs deploy
+```
+
+## Build commands
+
+| Command | Description |
+|---------|-------------|
+| `bun run dev` | Watch mode — rebuilds on change, outputs to test vault |
+| `bun run build` | Production build — type-check + bundle |
+| `bun test` | Run unit tests |
+| `bun test --watch` | Run tests in watch mode |
+| `bun run lint` | ESLint with obsidian-plugin rules |
+| `bun run e2e` | Run Playwright E2E tests |
+| `bun run build:test` | Build + deploy to test vault |
+
+## Development mode
+
+```bash
+bun run dev
+```
+
+This watches `src/` and outputs to `dnng-test-vault/.obsidian/plugins/daily-notes-ng/`. Open the test vault in Obsidian and reload the plugin after each change:
+
+```bash
+OBS="/mnt/c/Users/Cybersader/AppData/Local/Obsidian/Obsidian.com"
+$OBS vault=dnng-test-vault plugin:reload id=daily-notes-ng
+```
+
+## Tech stack
+
+| Tool | Purpose |
+|------|---------|
+| **Bun** | Package manager, script runner, test runner |
+| **esbuild** | Bundler (CJS format, ES2018 target) |
+| **TypeScript** | Language (strict mode) |
+| **ESLint 9** | Linting with `eslint-plugin-obsidianmd` for community plugin compliance |
+| **Playwright** | E2E testing via Chrome DevTools Protocol |
+| **Astro Starlight** | Documentation site |
+| **chrono-node** | Natural language date parsing (only runtime dependency) |
+
+## Linting for community plugin submission
+
+The ESLint config enforces Obsidian community plugin guidelines:
+
+```bash
+bun run lint
+```
+
+Key rules:
+- **Sentence case** for all UI text (`obsidianmd/ui/sentence-case`)
+- **No manual HTML headings** in settings (`obsidianmd/settings-tab/no-manual-html-headings`)
+- **No plugin name in headings** (`obsidianmd/settings-tab/no-problematic-settings-headings`)
+- **Manifest validation** (`obsidianmd/validate-manifest`)
+
+See the [Obsidian Plugin Guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines) for full requirements.

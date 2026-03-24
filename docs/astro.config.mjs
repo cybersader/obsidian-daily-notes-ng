@@ -21,8 +21,16 @@ export default defineConfig({
           autogenerate: { directory: 'features' },
         },
         {
+          label: 'Concepts',
+          autogenerate: { directory: 'concepts' },
+        },
+        {
           label: 'Guides',
           autogenerate: { directory: 'guides' },
+        },
+        {
+          label: 'Development',
+          autogenerate: { directory: 'development' },
         },
         {
           label: 'Reference',

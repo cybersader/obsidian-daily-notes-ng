@@ -1,18 +1,38 @@
 ---
 title: Templates
-description: Template integration and Templater bridge
+description: Template integration, built-in variables, and Templater bridge
+sidebar:
+  order: 3
 ---
 
-Daily Notes NG includes a built-in template engine and a bridge to the Templater plugin.
+Daily Notes NG includes a built-in template engine and a bridge to the [Templater](https://github.com/SilentVoid13/Templater) plugin.
 
 ## Built-in variables
 
-When Templater is not installed, the plugin resolves these variables:
+When Templater is not installed, the plugin resolves these [template context](/obsidian-daily-notes-ng/concepts/glossary/#template-context) variables:
 
-- `{{title}}` — The note's filename (without extension)
-- `{{date}}` — Today's date in `YYYY-MM-DD` format
-- `{{time}}` — Current time in `HH:mm` format
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `{{title}}` | Note filename (without extension) | `2026-03-24` |
+| `{{date}}` | Today's date in `YYYY-MM-DD` format | `2026-03-24` |
+| `{{time}}` | Current time in `HH:mm` format | `14:30` |
+| `{{person}}` | Current user's display name (from [identity](/obsidian-daily-notes-ng/features/identity/)) | `Alice Smith` |
 
 ## Templater integration
 
-When Templater is installed, Daily Notes NG delegates template processing to Templater automatically. This means you can use the full Templater syntax (`<% %>` tags) in your periodic note templates.
+When Templater is installed, Daily Notes NG delegates template processing to Templater automatically via the [Templater bridge](/obsidian-daily-notes-ng/concepts/glossary/#templater-bridge). This means you can use the full Templater syntax (`<% %>` tags) in your periodic note templates.
+
+See the [Templater integration guide](/obsidian-daily-notes-ng/guides/templater-integration/) for recommended template patterns.
+
+## Template assignment
+
+Templates are assigned per-[periodicity](/obsidian-daily-notes-ng/concepts/glossary/#periodicity) in **Settings > Periodic notes > Template**.
+
+In multi-user vaults, templates can be overridden per-person via [person note frontmatter](/obsidian-daily-notes-ng/features/identity/#setting-up-person-notes) or [settings-based overrides](/obsidian-daily-notes-ng/features/identity/#resolution-chain).
+
+## Related pages
+
+- [Templater integration guide](/obsidian-daily-notes-ng/guides/templater-integration/)
+- [Periodic notes](/obsidian-daily-notes-ng/features/periodic-notes/)
+- [Multi-user identity](/obsidian-daily-notes-ng/features/identity/) — per-person templates
+- [Settings reference](/obsidian-daily-notes-ng/reference/settings/)

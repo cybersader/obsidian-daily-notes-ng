@@ -1,0 +1,134 @@
+---
+title: Architecture
+description: System architecture and module design of Daily Notes NG
+sidebar:
+  order: 2
+---
+
+## Module map
+
+Daily Notes NG is organized into feature modules that communicate through the plugin's main class (`DailyNotesNGPlugin`). Each module has a single responsibility.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                    DailyNotesNGPlugin                     │
+│                      (src/main.ts)                        │
+│                                                          │
+│  Instantiates all managers, wires dependencies, registers│
+│  views/commands/event handlers on the Plugin lifecycle   │
+├──────────────────────────────────────────────────────────┤
+│                                                          │
+│  ┌─────────────────┐   ┌─────────────────┐              │
+│  │ PeriodicNote     │   │ CalendarView    │              │
+│  │ Manager          │   │ (ItemView)      │              │
+│  │ Creates/opens    │   │ Month grid      │              │
+│  │ periodic notes   │   │ sidebar         │              │
+│  └────────┬────────┘   └─────────────────┘              │
+│           │                                              │
+│           ▼                                              │
+│  ┌─────────────────┐                                     │
+│  │ PeriodicConfig   │ ◄── Resolves effective config      │
+│  │ Resolver         │     for current device + user      │
+│  └────────┬────────┘                                     │
+│           │                                              │
+│     ┌─────┴──────┬──────────────┬──────────────┐        │
+│     ▼            ▼              ▼              ▼        │
+│  ┌────────┐ ┌──────────┐ ┌──────────┐ ┌────────────┐   │
+│  │Device  │ │Person    │ │User      │ │Device      │   │
+│  │Identity│ │Note      │ │Registry  │ │Preferences │   │
+│  │Manager │ │Service   │ │(mapping) │ │(localStorage│   │
+│  │(UUID)  │ │(frontm.) │ │          │ │ overrides) │   │
+│  └────────┘ └──────────┘ └──────────┘ └────────────┘   │
+│                                                          │
+│  ┌─────────────────┐ ┌─────────────────┐                │
+│  │ TemplateEngine   │ │ TemplaterBridge │                │
+│  │ (built-in vars)  │ │ (delegates to   │                │
+│  │                  │ │  Templater)     │                │
+│  └─────────────────┘ └─────────────────┘                │
+│                                                          │
+│  ┌──────────┐ ┌──────────────┐ ┌──────────────────┐     │
+│  │ Todo     │ │ Frontmatter  │ │ DateSuggest      │     │
+│  │ Rollover │ │ DateTracker  │ │ (EditorSuggest)  │     │
+│  │          │ │ (debounced)  │ │ + DateParser     │     │
+│  └──────────┘ └──────────────┘ └──────────────────┘     │
+└──────────────────────────────────────────────────────────┘
+```
+
+## Data flow: creating a periodic note
+
+When a user triggers "Open today's daily note":
+
+```
+1. NavigationCommands
+   → calls periodicManager.openPeriodicNote(today, 'daily')
+
+2. PeriodicNoteManager
+   → asks PeriodicConfigResolver.resolve('daily')
+   → asks PeriodicConfigResolver.resolveFolder('daily')
+
+3. PeriodicConfigResolver
+   → checks DevicePreferences (localStorage)
+   → checks PersonNoteService (person frontmatter)
+   → checks settings.personPeriodicOverrides
+   → falls back to settings.periodic.daily
+   → interpolates {{person}} in folder path
+
+4. PeriodicNoteManager (continued)
+   → checks if note exists at resolved path
+   → if not: creates folder, reads template, processes variables
+   → adds creator attribution (if identity enabled)
+   → generates note UUID (if configured)
+   → delegates to Templater (if installed) or built-in engine
+   → opens the note in the active editor leaf
+```
+
+## Identity system data flow
+
+```
+┌─────────────────┐     ┌──────────────────────────────────┐
+│   localStorage   │     │     Plugin Settings (synced)     │
+│  (per-device,    │     │                                  │
+│   NOT synced)    │     │  deviceUserMappings: [           │
+│                  │     │    { deviceId: "abc",            │
+│  device-id:      │     │      userNotePath: "People/      │
+│    "abc-123..."  │     │        Alice.md",                │
+│                  │     │      deviceName: "Windows PC",   │
+│  device-prefs:   │     │      lastSeen: 1711234567 }     │
+│    { periodic:   │     │  ]                               │
+│      daily:      │     │                                  │
+│        folder:   │     │  personPeriodicOverrides: [...]  │
+│          "..." } │     │  typeConfig: { ... }             │
+└────────┬────────┘     └───────────────┬──────────────────┘
+         │                              │
+         ▼                              ▼
+┌─────────────────────────────────────────────────────────┐
+│              PeriodicConfigResolver                      │
+│                                                         │
+│  1. Device prefs (localStorage)      ← highest priority │
+│  2. Person note frontmatter                             │
+│  3. Settings-based person overrides                     │
+│  4. Vault-wide config                ← lowest priority  │
+│                                                         │
+│  Returns: effective PeriodicConfig for this device+user │
+└─────────────────────────────────────────────────────────┘
+```
+
+## Storage layers
+
+| Layer | Where | Synced? | Contains |
+|-------|-------|---------|----------|
+| **localStorage** | Browser storage | No | Device ID, device preferences |
+| **Plugin settings** | `.obsidian/plugins/daily-notes-ng/data.json` | Yes (Obsidian Sync) | All config, device-to-user mappings |
+| **Person note frontmatter** | `People/Alice.md` | Yes | Per-person periodic overrides, timezone |
+| **Group note frontmatter** | `People/Dev Team.md` | Yes | Group membership list |
+| **Note frontmatter** | Any `.md` file | Yes | Note UUID, creator, dates |
+
+## Key design decisions
+
+**Why localStorage for device identity?** Device IDs and device preferences must NOT sync. If Alice's iPad preferences synced to Bob's Mac, they'd override Bob's settings. `localStorage` is inherently per-device.
+
+**Why a resolution chain?** Shared vaults need layered configuration. A team sets vault-wide defaults, individual members customize via their person note, and a specific device can further override (e.g., a tablet with different folder preferences).
+
+**Why `{{person}}` interpolation?** Most multi-user setups want the same structure per person (e.g., `Journal/<name>/Daily`). The placeholder avoids duplicating the full config for each person.
+
+**Why configurable type properties?** Enterprise vaults may use `role: team-member` instead of `type: person`. Making property names configurable ensures compatibility without forking.

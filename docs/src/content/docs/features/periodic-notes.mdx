@@ -1,28 +1,70 @@
 ---
 title: Periodic notes
-description: Daily, weekly, monthly, quarterly, and yearly notes
+description: Daily, weekly, monthly, quarterly, and yearly notes with independent configurations
+sidebar:
+  order: 1
 ---
 
-Daily Notes NG supports five periodicities, each with independent configuration for folder, filename format, and template.
+Daily Notes NG supports five [periodicities](/obsidian-daily-notes-ng/concepts/glossary/#periodicity), each with independent configuration for folder, filename format, and template.
+
+## How it works
+
+When you trigger a command like "Open today's daily note", the plugin:
+
+1. Resolves the effective configuration through the [resolution chain](/obsidian-daily-notes-ng/concepts/glossary/#resolution-chain) (accounting for [multi-user identity](/obsidian-daily-notes-ng/features/identity/) if enabled)
+2. Computes the filename from the date and format string
+3. Checks if the note already exists at the resolved folder path
+4. If not, creates it: makes folders, applies the template, adds [creator attribution](/obsidian-daily-notes-ng/features/identity/#creator-attribution) and [note UUID](/obsidian-daily-notes-ng/features/identity/#note-uuids) if configured
+5. Opens the note in the active editor
 
 ## Configuration
 
-Each periodicity can be enabled separately in settings. When enabled, you can configure:
+Each periodicity can be enabled separately in **Settings > Periodic notes**:
 
-- **Folder** — Where notes are stored (e.g., `Journal/Daily`)
-- **Format** — Moment.js date format for filenames (e.g., `YYYY-MM-DD`)
-- **Template** — Path to a template file applied on creation
+- **Folder** — Where notes are stored. Supports [`{{person}}`](/obsidian-daily-notes-ng/features/identity/#per-person-folders-with-person) for multi-user vaults.
+- **Format** — [Moment.js format string](https://momentjs.com/docs/#/displaying/format/) for filenames
+- **Template** — Path to a template file applied on creation. See [templates](/obsidian-daily-notes-ng/features/templates/).
 
 ## Default formats
 
 | Periodicity | Default format | Example filename |
 |-------------|---------------|-----------------|
-| Daily | `YYYY-MM-DD` | `2026-03-23` |
-| Weekly | `gggg-[W]WW` | `2026-W12` |
+| Daily | `YYYY-MM-DD` | `2026-03-24` |
+| Weekly | `gggg-[W]WW` | `2026-W13` |
 | Monthly | `YYYY-MM` | `2026-03` |
 | Quarterly | `YYYY-[Q]Q` | `2026-Q1` |
 | Yearly | `YYYY` | `2026` |
 
-## Folder auto-creation
+## Nested folder structures
 
-Folders are created automatically when a note is first created for a periodicity.
+Using slashes in the format string automatically creates subdirectories:
+
+```
+Format: YYYY/MM-MMMM/YYYY-MM-DD-dddd
+Result: 2026/03-March/2026-03-24-Tuesday.md
+```
+
+## Multi-user periodic notes
+
+When the [identity system](/obsidian-daily-notes-ng/features/identity/) is enabled, each person can have their own folders and templates. The simplest setup uses the `{{person}}` placeholder:
+
+```
+Folder: Journal/{{person}}/Daily
+```
+
+This creates separate folder trees per person without any additional configuration. See [per-person folders](/obsidian-daily-notes-ng/features/identity/#per-person-folders-with-person) for details.
+
+## Navigation commands
+
+See [commands reference](/obsidian-daily-notes-ng/reference/commands/) for the full list. Key commands:
+
+- **Open today's daily note** — creates or opens today's note
+- **Open previous/next** — navigates relative to the currently open periodic note
+- These work for all five periodicities
+
+## Related pages
+
+- [Templates](/obsidian-daily-notes-ng/features/templates/) — Template variables and Templater integration
+- [Multi-user identity](/obsidian-daily-notes-ng/features/identity/) — Per-person folders and templates
+- [Settings reference](/obsidian-daily-notes-ng/reference/settings/) — Full periodic notes settings
+- [Commands reference](/obsidian-daily-notes-ng/reference/commands/) — Navigation commands

@@ -1,0 +1,108 @@
+---
+title: Test fixtures plugin
+description: Generate and manage test data for rapid development iteration
+sidebar:
+  order: 4
+---
+
+The **Daily Notes NG Test Fixtures** plugin is a separate companion plugin that lives outside the main plugin's source. It generates reproducible sample data for testing and can reset the vault to a clean state.
+
+## Why a separate plugin?
+
+- Keeps test data generation out of the main plugin's bundle size
+- Can be installed independently via [BRAT](https://github.com/TfTHacker/obsidian42-brat)
+- Commands available in Obsidian's command palette for quick iteration
+- Follows the [TaskNotes test fixtures](https://github.com/cybersader/tasknotes-test-fixtures) pattern
+
+## Location
+
+```
+plugin_development/
+├── obsidian-daily-notes-ng/          # Main plugin
+└── daily-notes-ng-test-fixtures/     # Test fixtures (separate directory)
+    ├── src/
+    │   ├── main.ts                   # Plugin entry with commands
+    │   ├── cleanup.ts                # Recursive cleanup
+    │   └── generators/
+    │       ├── dailyNotes.ts         # 30 days of sample daily notes
+    │       ├── weeklyNotes.ts        # 8 weeks of sample weekly notes
+    │       ├── personNotes.ts        # Person + group notes for identity testing
+    │       └── templateFiles.ts      # Sample template files
+    ├── manifest.json
+    ├── package.json
+    └── esbuild.config.mjs
+```
+
+## Commands
+
+| Command | ID | Description |
+|---------|------|-------------|
+| **Full test setup** | `daily-notes-ng-test-fixtures:full-setup` | Configures Daily Notes NG settings + generates all data |
+| **Generate all test data** | `daily-notes-ng-test-fixtures:generate-all` | Generates sample notes without changing settings |
+| **Remove all test data** | `daily-notes-ng-test-fixtures:remove-all` | Deletes all generated folders and files |
+| **Configure Daily Notes NG** | `daily-notes-ng-test-fixtures:configure-dnng` | Sets optimal plugin settings for testing |
+
+## What gets generated
+
+### Daily notes (31 files)
+- `Test-Journal/Daily/YYYY-MM-DD.md` — last 30 days plus today
+- Includes frontmatter with `date created` and `tags: [daily]`
+- Every 3rd day has completed todos (`- [x]`)
+- Every 5th day has incomplete todos (`- [ ]`) for [rollover testing](/obsidian-daily-notes-ng/features/todo-rollover/)
+
+### Weekly notes (9 files)
+- `Test-Journal/Weekly/gggg-WWW.md` — last 8 weeks plus current
+- Includes goals, review, and next-week sections
+
+### Person notes (3 files)
+- `Test-People/Alice Smith.md` — timezone: America/New_York
+- `Test-People/Bob Jones.md` — timezone: Europe/London
+- `Test-People/Carol Chen.md` — timezone: Asia/Tokyo
+
+### Group note (1 file)
+- `Test-People/Dev Team.md` — members: Alice, Bob, Carol
+
+### Template files (3 files)
+- `Test-Templates/Daily.md`, `Weekly.md`, `Monthly.md`
+- Uses `{{title}}`, `{{date}}` placeholders
+
+## Using via Obsidian CLI
+
+```bash
+OBS="/mnt/c/Users/Cybersader/AppData/Local/Obsidian/Obsidian.com"
+
+# Full setup (configure + generate)
+$OBS vault=dnng-test-vault eval \
+  "code=app.commands.executeCommandById('daily-notes-ng-test-fixtures:full-setup')"
+
+# Verify data was generated
+$OBS vault=dnng-test-vault files folder=Test-Journal/Daily
+
+# Run your tests...
+
+# Clean up
+$OBS vault=dnng-test-vault eval \
+  "code=app.commands.executeCommandById('daily-notes-ng-test-fixtures:remove-all')"
+
+# Verify cleanup
+$OBS vault=dnng-test-vault eval "code=app.vault.getFiles().length"
+```
+
+## Building the fixtures plugin
+
+```bash
+cd daily-notes-ng-test-fixtures
+bun install
+bun run build
+```
+
+The built `main.js` + `manifest.json` are deployed to `dnng-test-vault/.obsidian/plugins/daily-notes-ng-test-fixtures/`.
+
+## Extending with new generators
+
+To add a new data generator:
+
+1. Create `src/generators/myData.ts`
+2. Export an `async function generateMyData(app: App): Promise<void>`
+3. Import and call it from `src/main.ts` in the `generate-all` command
+4. Add cleanup paths to `src/cleanup.ts`

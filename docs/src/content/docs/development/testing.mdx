@@ -1,0 +1,224 @@
+---
+title: Testing workflow
+description: Unit testing, CLI testing, E2E testing, and agentic development workflows
+sidebar:
+  order: 3
+---
+
+Daily Notes NG uses a multi-layered testing strategy combining unit tests, Obsidian CLI automation, and E2E tests via Playwright.
+
+## Testing layers
+
+```
+┌────────────────────────────────────────────────┐
+│          Layer 3: E2E (Playwright + CDP)       │
+│  Full UI automation against running Obsidian   │
+│  e2e/daily-notes-ng.spec.ts                    │
+├────────────────────────────────────────────────┤
+│          Layer 2: CLI Integration              │
+│  Obsidian CLI commands against live vault      │
+│  Build → reload → execute → inspect → screenshot│
+├────────────────────────────────────────────────┤
+│          Layer 1: Unit Tests (Bun)             │
+│  Pure logic tests with mocked Obsidian API     │
+│  tests/**/*.test.ts                            │
+└────────────────────────────────────────────────┘
+```
+
+## Layer 1: Unit tests
+
+Run with Bun's built-in test runner:
+
+```bash
+bun test           # Run all tests
+bun test --watch   # Watch mode
+```
+
+Tests live in `tests/` mirroring the `src/` structure. The Obsidian API is mocked via `tests/preload.ts` (Bun plugin that provides a mock `obsidian` module).
+
+### What to unit test
+- [PeriodicConfigResolver](/obsidian-daily-notes-ng/development/architecture/#data-flow-creating-a-periodic-note) resolution chain logic
+- [DevicePreferences](/obsidian-daily-notes-ng/concepts/glossary/#device-id) localStorage read/write
+- Frontmatter parsing utilities
+- Todo parser (checkbox extraction)
+- Date utilities and template variable resolution
+
+### What NOT to unit test
+- Obsidian UI components (no DOM in unit tests)
+- Plugin lifecycle (onload/onunload)
+- File creation (requires real vault)
+
+## Layer 2: Obsidian CLI integration
+
+The [Obsidian CLI](https://help.obsidian.md/cli) (v1.12+) enables testing against a running Obsidian instance from the terminal. This is the primary testing workflow for development.
+
+### Setup
+
+```bash
+# Set the CLI alias (WSL2)
+OBS="/mnt/c/Users/Cybersader/AppData/Local/Obsidian/Obsidian.com"
+
+# Verify connection
+$OBS vault=dnng-test-vault eval "code=1+1"
+# => 2
+```
+
+> **WSL2 note**: Use `Obsidian.com` (not `.exe`). The `.com` file is a terminal redirector that provides proper stdin/stdout. Requires Catalyst license.
+
+### Build-reload-test cycle
+
+The core development loop:
+
+```bash
+# 1. Build and deploy
+bun run build && node copy-files.mjs
+
+# 2. Reload plugin in Obsidian
+$OBS vault=dnng-test-vault plugin:reload id=daily-notes-ng
+
+# 3. Run a command
+$OBS vault=dnng-test-vault eval \
+  "code=app.commands.executeCommandById('daily-notes-ng:open-today')"
+
+# 4. Inspect result
+$OBS vault=dnng-test-vault eval \
+  "code=app.workspace.getActiveFile()?.path"
+
+# 5. Check for errors
+$OBS vault=dnng-test-vault dev:errors
+```
+
+Or as a one-liner:
+
+```bash
+bun run build && node copy-files.mjs && \
+  $OBS vault=dnng-test-vault plugin:reload id=daily-notes-ng && \
+  sleep 1 && \
+  $OBS vault=dnng-test-vault eval \
+    "code=app.commands.executeCommandById('daily-notes-ng:open-today')"
+```
+
+### Useful CLI commands for testing
+
+```bash
+# Inspect plugin settings at runtime
+$OBS vault=dnng-test-vault eval \
+  "code=JSON.stringify(app.plugins.plugins['daily-notes-ng'].settings.identity, null, 2)"
+
+# List all files in vault
+$OBS vault=dnng-test-vault files
+
+# List files in a folder
+$OBS vault=dnng-test-vault files folder=Test-Journal/Daily
+
+# Read a specific note
+$OBS vault=dnng-test-vault read path="Test-Journal/Daily/2026-03-24.md"
+
+# Take a screenshot
+$OBS vault=dnng-test-vault dev:screenshot
+
+# Check console errors
+$OBS vault=dnng-test-vault dev:errors
+
+# Check console output
+$OBS vault=dnng-test-vault dev:console limit=10
+
+# List registered commands
+$OBS vault=dnng-test-vault commands | grep daily-notes-ng
+```
+
+### Testing the identity system via CLI
+
+```bash
+# Check current device registration
+$OBS vault=dnng-test-vault eval \
+  "code=app.plugins.plugins['daily-notes-ng'].userRegistry.getCurrentUser() ?? 'not registered'"
+
+# Check device ID
+$OBS vault=dnng-test-vault eval \
+  "code=app.plugins.plugins['daily-notes-ng'].deviceManager.getOrCreateDeviceId()"
+
+# Inspect all device mappings
+$OBS vault=dnng-test-vault eval \
+  "code=JSON.stringify(app.plugins.plugins['daily-notes-ng'].settings.identity.deviceUserMappings, null, 2)"
+```
+
+## Layer 3: E2E tests (Playwright)
+
+For automated UI testing against a running Obsidian instance via Chrome DevTools Protocol:
+
+```bash
+# Launch Obsidian with debug port
+bash e2e-launch.sh
+
+# Run E2E tests
+bun run e2e
+```
+
+E2E tests live in `e2e/` and use a custom launcher (`e2e/obsidian.ts`) that:
+- Detects the Obsidian binary (cross-platform: Windows, macOS, Linux, WSL2)
+- Connects via CDP on port 9333
+- Provides helpers: `runCommand()`, `waitForNotice()`
+
+### When to use E2E vs CLI
+
+| Scenario | Use |
+|----------|-----|
+| Verify a command works | CLI (`eval + executeCommandById`) |
+| Check file was created correctly | CLI (`read`) |
+| Inspect settings at runtime | CLI (`eval`) |
+| Test modal interactions | E2E (Playwright) |
+| Test drag-and-drop in calendar | E2E (Playwright) |
+| Screenshot for documentation | CLI (`dev:screenshot`) |
+| Automated regression suite | E2E (Playwright) |
+
+## Test fixtures plugin
+
+The [test fixtures plugin](/obsidian-daily-notes-ng/development/test-fixtures/) generates reproducible sample data for testing. Use it to quickly set up and tear down test scenarios:
+
+```bash
+# Generate all test data
+$OBS vault=dnng-test-vault eval \
+  "code=app.commands.executeCommandById('daily-notes-ng-test-fixtures:full-setup')"
+
+# Clean up all test data
+$OBS vault=dnng-test-vault eval \
+  "code=app.commands.executeCommandById('daily-notes-ng-test-fixtures:remove-all')"
+```
+
+## Agentic development workflow
+
+When working with AI coding assistants (Claude Code, etc.), the recommended workflow is:
+
+```
+1. Agent writes/modifies source code
+2. Agent runs:  bun run build && node copy-files.mjs
+3. Agent runs:  $OBS plugin:reload id=daily-notes-ng
+4. Agent runs:  $OBS eval "code=..." to test the change
+5. Agent runs:  $OBS dev:errors to check for issues
+6. Agent reads result and iterates
+```
+
+This enables a fully autonomous **build-reload-test** loop without human interaction for most changes. The agent can:
+
+- Generate test fixtures, verify they exist via CLI
+- Execute plugin commands and inspect results
+- Take screenshots to verify UI changes
+- Read file contents to verify note creation
+- Check plugin settings at runtime
+
+### Agent-specific tips
+
+- Use `eval` for most testing — it's the most reliable CLI command
+- Use `dev:errors` after every reload to catch silent failures
+- Use `files folder=<path>` to verify directory structures
+- Avoid `plugin:reload` in rapid succession — add `sleep 1` between reload and test
+- If CLI hangs, Obsidian may be showing a modal — use `dev:screenshot` to diagnose
+
+## Continuous integration
+
+GitHub Actions runs on every push to `main`:
+- **Plugin release** (`.github/workflows/release.yml`): Builds on tag push, creates GitHub release
+- **Docs deploy** (`.github/workflows/deploy-docs.yml`): Builds Starlight, deploys to GitHub Pages
+
+Unit tests can be added to CI. E2E tests require a running Obsidian instance, so they're local-only.
