@@ -44,6 +44,8 @@ export class PeriodicNoteManager {
     // Check if note already exists (checks both flat and folder-note paths)
     const existing = this.findExistingNote(folder, filename);
     if (existing) {
+      // Still ensure .base MOC exists even when opening existing notes
+      await this.ensureBaseMoc(folder, periodicity);
       await this.openFile(existing);
       return existing;
     }
