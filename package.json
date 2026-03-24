@@ -1,0 +1,48 @@
+{
+  "name": "obsidian-daily-notes-ng",
+  "version": "0.1.0",
+  "description": "Next-generation daily notes plugin for Obsidian: periodic notes, calendar, templates, todo rollover, frontmatter dates, natural language dates.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "bun run esbuild.config.mjs",
+    "build": "bun x tsc -noEmit -skipLibCheck && bun run esbuild.config.mjs production",
+    "test": "jest --verbose",
+    "test:watch": "jest --watch",
+    "lint": "eslint src",
+    "e2e": "playwright test",
+    "e2e:launch": "bash e2e-launch.sh",
+    "build:test": "bun run build && node copy-files.mjs",
+    "version": "bun run version-bump.mjs && git add manifest.json versions.json"
+  },
+  "keywords": [
+    "obsidian",
+    "obsidian-plugin",
+    "daily-notes",
+    "periodic-notes",
+    "calendar",
+    "journal",
+    "templates"
+  ],
+  "author": "cybersader",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/parser": "^8.32.0",
+    "@typescript-eslint/utils": "^8.32.0",
+    "builtin-modules": "^3.3.0",
+    "esbuild": "^0.19.8",
+    "eslint": "^9.17.0",
+    "eslint-plugin-obsidianmd": "latest",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "ts-jest": "^29.3.2",
+    "obsidian": "latest",
+    "typescript": "^5.3.2",
+    "typescript-eslint": "^8.32.0",
+    "@playwright/test": "^1.57.0"
+  },
+  "dependencies": {
+    "chrono-node": "^2.7.7"
+  }
+}

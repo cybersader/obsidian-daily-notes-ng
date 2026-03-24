@@ -1,0 +1,19 @@
+---
+title: Todo rollover
+description: Carry incomplete todos from previous notes
+---
+
+When enabled, incomplete checkboxes from your previous daily note are automatically carried forward to the new note.
+
+## How it works
+
+1. When you create a new daily note, the plugin finds yesterday's note
+2. Extracts all incomplete todos (`- [ ]`)
+3. Appends them to the new note
+4. Optionally removes completed todos from the previous note
+
+## Settings
+
+- **Enable rollover** — Toggle the feature on/off
+- **Include sub-items** — Also carry forward nested items under incomplete todos
+- **Delete completed** — Remove `- [x]` items from the previous note

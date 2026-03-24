@@ -1,0 +1,18 @@
+---
+title: Templates
+description: Template integration and Templater bridge
+---
+
+Daily Notes NG includes a built-in template engine and a bridge to the Templater plugin.
+
+## Built-in variables
+
+When Templater is not installed, the plugin resolves these variables:
+
+- `{{title}}` — The note's filename (without extension)
+- `{{date}}` — Today's date in `YYYY-MM-DD` format
+- `{{time}}` — Current time in `HH:mm` format
+
+## Templater integration
+
+When Templater is installed, Daily Notes NG delegates template processing to Templater automatically. This means you can use the full Templater syntax (`<% %>` tags) in your periodic note templates.

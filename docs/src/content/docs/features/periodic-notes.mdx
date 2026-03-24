@@ -1,0 +1,28 @@
+---
+title: Periodic notes
+description: Daily, weekly, monthly, quarterly, and yearly notes
+---
+
+Daily Notes NG supports five periodicities, each with independent configuration for folder, filename format, and template.
+
+## Configuration
+
+Each periodicity can be enabled separately in settings. When enabled, you can configure:
+
+- **Folder** — Where notes are stored (e.g., `Journal/Daily`)
+- **Format** — Moment.js date format for filenames (e.g., `YYYY-MM-DD`)
+- **Template** — Path to a template file applied on creation
+
+## Default formats
+
+| Periodicity | Default format | Example filename |
+|-------------|---------------|-----------------|
+| Daily | `YYYY-MM-DD` | `2026-03-23` |
+| Weekly | `gggg-[W]WW` | `2026-W12` |
+| Monthly | `YYYY-MM` | `2026-03` |
+| Quarterly | `YYYY-[Q]Q` | `2026-Q1` |
+| Yearly | `YYYY` | `2026` |
+
+## Folder auto-creation
+
+Folders are created automatically when a note is first created for a periodicity.

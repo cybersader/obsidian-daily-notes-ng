@@ -1,0 +1,28 @@
+---
+title: Templater integration
+description: Using Daily Notes NG with Templater
+---
+
+Daily Notes NG automatically detects and integrates with Templater when it's installed.
+
+## How it works
+
+When creating a periodic note:
+
+1. Daily Notes NG creates the file with the configured template
+2. If Templater is installed, it delegates template processing to Templater
+3. All Templater syntax (`<% %>` tags) is resolved by Templater's engine
+
+## Recommended template pattern
+
+```markdown
+---
+created: <% tp.file.creation_date() %>
+week: <% moment(tp.file.title).format("gggg-[W]WW") %>
+---
+<< [[<% tp.date.now("YYYY-MM-DD", -1, tp.file.title, "YYYY-MM-DD") %>]] | [[<% tp.date.now("YYYY-MM-DD", 1, tp.file.title, "YYYY-MM-DD") %>]] >>
+
+# <% moment(tp.file.title, "YYYY-MM-DD").format("dddd, MMMM D, YYYY") %>
+```
+
+The critical technique is passing the filename as a reference date to `tp.date.now()`, ensuring yesterday/tomorrow links calculate correctly even when creating past or future notes.

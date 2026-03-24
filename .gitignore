@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+main.js
+main.js.map
+styles.css
+*.js.map
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+
+# Test vault data
+test-vault/.obsidian/workspace.json
+test-vault/.obsidian/workspace-mobile.json
+test-vault/.obsidian/cache/
+
+# Claude Code
+.claude/settings.local.json
+
+# Docs build output
+docs/dist/
+docs/node_modules/
+docs/.astro/
+
+# Bun
+bun.lockb
+
+# Research files (not part of plugin source)
+Claude-*.md
+compass_artifact_*.md

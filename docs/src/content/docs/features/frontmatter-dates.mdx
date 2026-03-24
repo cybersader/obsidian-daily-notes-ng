@@ -1,0 +1,20 @@
+---
+title: Frontmatter dates
+description: Automatic date created and date modified tracking
+---
+
+Daily Notes NG can automatically maintain `date created` and `date modified` properties in your note frontmatter.
+
+## Behavior
+
+- **Date created** is set once when a note is first created
+- **Date modified** updates after you stop typing (10-second debounce by default)
+- Only reacts to active editor changes, not syncs or passive file opens
+
+## Settings
+
+- **Track dates** — Enable/disable the feature
+- **Created key** — Frontmatter property name (default: `date created`)
+- **Modified key** — Frontmatter property name (default: `date modified`)
+- **Date format** — Moment.js format string (default: ISO 8601)
+- **Delay** — Debounce time in milliseconds (default: 10000)
