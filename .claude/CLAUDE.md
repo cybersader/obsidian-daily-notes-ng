@@ -8,7 +8,7 @@ Next-generation daily notes plugin for Obsidian. Consolidates periodic notes, ca
 
 ```bash
 bun install              # Install dependencies
-bun run dev              # Development mode (watch, outputs to test-vault)
+bun run dev              # Development mode (watch, outputs to dnng-test-vault)
 bun run build            # Production build (type-check + bundle)
 bun test                 # Run tests
 bun test --watch         # Watch mode
@@ -37,7 +37,7 @@ src/
 ## Key Patterns
 
 - **Bun** as package manager and script runner
-- **esbuild** bundles to `test-vault/.obsidian/plugins/daily-notes-ng/` in dev mode
+- **esbuild** bundles to `dnng-test-vault/.obsidian/plugins/daily-notes-ng/` in dev mode
 - **Jest + ts-jest** for unit tests, jsdom environment
 - **ESLint 9 flat config** with `eslint-plugin-obsidianmd` for community plugin compliance
 - **Identity system** adapted from TaskNotes (DeviceIdentityManager, UserRegistry, etc.)
@@ -50,7 +50,7 @@ src/
 - Unit tests in `tests/` mirror `src/` structure
 - Obsidian API mocked in `tests/__mocks__/obsidian.ts`
 - Calendar UI requires manual testing in test vault
-- Open `test-vault/` in Obsidian to test the plugin
+- Open `dnng-test-vault/` in Obsidian to test the plugin
 
 ## Git Commit Rules
 

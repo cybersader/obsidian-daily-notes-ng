@@ -2,7 +2,7 @@
 # Launch Obsidian with remote debugging port for E2E testing.
 # Usage: bash e2e-launch.sh [vault-path]
 
-VAULT_PATH="${1:-$(pwd)/test-vault}"
+VAULT_PATH="${1:-$(pwd)/dnng-test-vault}"
 PORT=9333
 
 echo "Launching Obsidian with debug port $PORT..."

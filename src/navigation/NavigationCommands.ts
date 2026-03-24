@@ -1,9 +1,9 @@
 import type DailyNotesNGPlugin from '../main';
-import { ALL_PERIODICITIES, PERIODICITY_LABELS } from '../periodic/periodicity';
+import { ALL_PERIODICITIES, PERIODICITY_LABELS, type Periodicity } from '../periodic/periodicity';
+import { navigatePeriod, today } from '../periodic/dateUtils';
 
 /**
  * Registers Command Palette commands for navigating periodic notes.
- * Commands: open today, navigate prev/next for each periodicity.
  */
 export class NavigationCommands {
   constructor(private plugin: DailyNotesNGPlugin) {}
@@ -14,7 +14,7 @@ export class NavigationCommands {
       id: 'open-today',
       name: 'Open today\'s daily note',
       callback: () => {
-        // TODO: Open today's note
+        this.plugin.periodicManager.openPeriodicNote(today(), 'daily');
       },
     });
 
@@ -26,7 +26,7 @@ export class NavigationCommands {
         id: `open-prev-${periodicity}`,
         name: `Open previous ${label} note`,
         callback: () => {
-          // TODO: Navigate to previous periodic note
+          this.openRelative(periodicity, -1);
         },
       });
 
@@ -34,9 +34,25 @@ export class NavigationCommands {
         id: `open-next-${periodicity}`,
         name: `Open next ${label} note`,
         callback: () => {
-          // TODO: Navigate to next periodic note
+          this.openRelative(periodicity, 1);
         },
       });
     }
+  }
+
+  private openRelative(periodicity: Periodicity, direction: 1 | -1): void {
+    // Start from the current file's date if it's a periodic note, otherwise today
+    const currentDate = this.getCurrentNoteDate(periodicity) ?? today();
+    const targetDate = navigatePeriod(currentDate, periodicity, direction);
+    this.plugin.periodicManager.openPeriodicNote(targetDate, periodicity);
+  }
+
+  private getCurrentNoteDate(periodicity: Periodicity): moment.Moment | null {
+    const activeFile = this.plugin.app.workspace.getActiveFile();
+    if (!activeFile) return null;
+
+    const config = this.plugin.configResolver.resolve(periodicity);
+    const parsed = (window as any).moment(activeFile.basename, config.format, true);
+    return parsed.isValid() ? parsed : null;
   }
 }

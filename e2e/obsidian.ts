@@ -5,7 +5,7 @@ import { spawn, ChildProcess, execSync } from 'child_process';
 import * as os from 'os';
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
-const E2E_VAULT_DIR = path.join(PROJECT_ROOT, 'test-vault');
+const E2E_VAULT_DIR = path.join(PROJECT_ROOT, 'dnng-test-vault');
 
 /** Detect if running inside WSL2 */
 function isWSL2(): boolean {

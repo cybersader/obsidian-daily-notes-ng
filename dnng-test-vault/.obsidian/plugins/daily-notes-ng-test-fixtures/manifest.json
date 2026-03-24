@@ -1,0 +1,10 @@
+{
+  "id": "daily-notes-ng-test-fixtures",
+  "name": "Daily Notes NG Test Fixtures",
+  "version": "0.1.0",
+  "minAppVersion": "1.4.0",
+  "description": "Generates test data for Daily Notes NG plugin development. Install via BRAT for quick testing iteration.",
+  "author": "cybersader",
+  "authorUrl": "https://github.com/cybersader",
+  "isDesktopOnly": false
+}

@@ -31,9 +31,9 @@ npm-debug.log*
 .env.local
 
 # Test vault data
-test-vault/.obsidian/workspace.json
-test-vault/.obsidian/workspace-mobile.json
-test-vault/.obsidian/cache/
+dnng-test-vault/.obsidian/workspace.json
+dnng-test-vault/.obsidian/workspace-mobile.json
+dnng-test-vault/.obsidian/cache/
 
 # Claude Code
 .claude/settings.local.json

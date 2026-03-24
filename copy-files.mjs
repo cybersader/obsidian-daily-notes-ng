@@ -3,7 +3,7 @@
  * Usage: node copy-files.mjs
  *
  * Copies main.js, styles.css, manifest.json to:
- *   1. test-vault/.obsidian/plugins/daily-notes-ng/ (always)
+ *   1. dnng-test-vault/.obsidian/plugins/daily-notes-ng/ (always)
  *   2. Any paths listed in .copy-files.local (one per line, optional)
  *   3. Path in OBSIDIAN_PLUGIN_PATH env var (optional)
  */
@@ -12,7 +12,7 @@ import { join, resolve } from 'path';
 import { homedir } from 'os';
 
 const FILES = ['main.js', 'styles.css', 'manifest.json'];
-const DEFAULT_DEST = 'test-vault/.obsidian/plugins/daily-notes-ng';
+const DEFAULT_DEST = 'dnng-test-vault/.obsidian/plugins/daily-notes-ng';
 
 function expandHome(p) {
   return p.startsWith('~') ? join(homedir(), p.slice(1)) : p;
