@@ -63,6 +63,48 @@ export class UserRegistry {
     return `[[${basename}]]`;
   }
 
+  /**
+   * Remove a device mapping by device ID.
+   */
+  removeDevice(deviceId: string): void {
+    const idx = this.settings.identity.deviceUserMappings.findIndex(m => m.deviceId === deviceId);
+    if (idx >= 0) {
+      this.settings.identity.deviceUserMappings.splice(idx, 1);
+    }
+  }
+
+  /**
+   * Update lastSeen timestamp for the current device.
+   */
+  updateLastSeen(): void {
+    const deviceId = this.deviceManager.getOrCreateDeviceId();
+    const mapping = this.findMappingByDeviceId(deviceId);
+    if (mapping) {
+      mapping.lastSeen = Date.now();
+    }
+  }
+
+  /**
+   * Get all registered device mappings.
+   */
+  getAllMappings(): DeviceUserMapping[] {
+    return this.settings.identity.deviceUserMappings;
+  }
+
+  /**
+   * Get the current device's ID.
+   */
+  getCurrentDeviceId(): string {
+    return this.deviceManager.getOrCreateDeviceId();
+  }
+
+  /**
+   * Get the current device's name.
+   */
+  getCurrentDeviceName(): string {
+    return this.deviceManager.getDeviceName();
+  }
+
   private findMappingByDeviceId(deviceId: string): DeviceUserMapping | undefined {
     return this.settings.identity.deviceUserMappings.find(m => m.deviceId === deviceId);
   }

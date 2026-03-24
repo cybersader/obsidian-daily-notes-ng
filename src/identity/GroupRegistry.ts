@@ -1,22 +1,27 @@
 import { App, TFile } from 'obsidian';
+import type { DailyNotesNGSettings } from '../settings/types';
 
 const MAX_RESOLUTION_DEPTH = 10;
 
 /**
  * Resolves group notes to their member person notes.
- * Group notes have `type: group` and a `members` list in frontmatter.
- * Supports nested groups with cycle detection.
+ * Uses configurable type properties for enterprise compatibility.
  * Adapted from TaskNotes GroupRegistry pattern.
  */
 export class GroupRegistry {
-  constructor(private app: App) {}
+  constructor(
+    private app: App,
+    private settings: DailyNotesNGSettings
+  ) {}
 
   /**
-   * Check if a file is a group note.
+   * Check if a file is a group note using configurable type properties.
    */
   isGroupNote(file: TFile): boolean {
     const cache = this.app.metadataCache.getFileCache(file);
-    return cache?.frontmatter?.type === 'group';
+    const typeKey = this.settings.identity.typeConfig.identityTypePropertyName;
+    const groupVal = this.settings.identity.typeConfig.groupTypeValue;
+    return cache?.frontmatter?.[typeKey] === groupVal;
   }
 
   /**
@@ -37,7 +42,8 @@ export class GroupRegistry {
     if (!(file instanceof TFile)) return [];
 
     const cache = this.app.metadataCache.getFileCache(file);
-    const members = cache?.frontmatter?.members;
+    const membersKey = this.settings.identity.typeConfig.membersPropertyName;
+    const members = cache?.frontmatter?.[membersKey];
     if (!Array.isArray(members)) return [];
 
     const resolved: string[] = [];

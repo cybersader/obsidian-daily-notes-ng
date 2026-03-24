@@ -5,11 +5,13 @@ import type { TemplateContext } from './TemplateEngine';
  */
 export function buildTemplateContext(
   title: string,
-  date: moment.Moment
+  date: moment.Moment,
+  personName?: string
 ): TemplateContext {
   return {
     title,
     date: date.format('YYYY-MM-DD'),
     time: date.format('HH:mm'),
+    person: personName ?? '',
   };
 }

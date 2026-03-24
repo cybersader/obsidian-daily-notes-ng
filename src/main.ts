@@ -11,6 +11,12 @@ import { DateSuggest } from './nlp/DateSuggest';
 import { DeviceIdentityManager } from './identity/DeviceIdentityManager';
 import { UserRegistry } from './identity/UserRegistry';
 import { NoteUuidService } from './identity/NoteUuidService';
+import { PersonNoteService } from './identity/PersonNoteService';
+import { GroupRegistry } from './identity/GroupRegistry';
+import { DevicePreferences } from './identity/DevicePreferences';
+import { PeriodicConfigResolver } from './identity/PeriodicConfigResolver';
+import { TemplateEngine } from './templates/TemplateEngine';
+import { TemplaterBridge } from './templates/TemplaterBridge';
 import { DebugLog } from './utils/debug';
 import { deepMerge } from './utils/deepMerge';
 
@@ -22,6 +28,12 @@ export default class DailyNotesNGPlugin extends Plugin {
   deviceManager!: DeviceIdentityManager;
   userRegistry!: UserRegistry;
   noteUuidService!: NoteUuidService;
+  personNoteService!: PersonNoteService;
+  groupRegistry!: GroupRegistry;
+  devicePreferences!: DevicePreferences;
+  configResolver!: PeriodicConfigResolver;
+  templateEngine!: TemplateEngine;
+  templaterBridge!: TemplaterBridge;
   debug!: DebugLog;
 
   async onload(): Promise<void> {
@@ -32,9 +44,24 @@ export default class DailyNotesNGPlugin extends Plugin {
     this.deviceManager = new DeviceIdentityManager();
     this.userRegistry = new UserRegistry(this.settings, this.deviceManager);
     this.noteUuidService = new NoteUuidService(this.app, this.settings);
+    this.personNoteService = new PersonNoteService(this.app, this.settings);
+    this.groupRegistry = new GroupRegistry(this.app, this.settings);
+    this.devicePreferences = new DevicePreferences();
+    this.configResolver = new PeriodicConfigResolver(
+      this.app, this.settings, this.userRegistry,
+      this.personNoteService, this.devicePreferences
+    );
 
-    // Initialize core managers
-    this.periodicManager = new PeriodicNoteManager(this.app, this.settings, this.debug);
+    // Initialize template system
+    this.templateEngine = new TemplateEngine(this.app, this.settings);
+    this.templaterBridge = new TemplaterBridge(this.app);
+
+    // Initialize core managers (now with identity-aware resolver)
+    this.periodicManager = new PeriodicNoteManager(
+      this.app, this.settings, this.configResolver,
+      this.userRegistry, this.noteUuidService,
+      this.templateEngine, this.templaterBridge, this.debug
+    );
     this.todoRollover = new TodoRollover(this.app, this.settings, this.debug);
     this.frontmatterTracker = new FrontmatterDateTracker(this.app, this.settings, this.debug);
 
@@ -71,6 +98,12 @@ export default class DailyNotesNGPlugin extends Plugin {
       this.app.workspace.onLayoutReady(() => {
         this.activateCalendarView();
       });
+    }
+
+    // Update device lastSeen if identity is enabled
+    if (this.settings.identity.enabled && this.userRegistry.getCurrentUser()) {
+      this.userRegistry.updateLastSeen();
+      await this.saveSettings();
     }
 
     await this.debug.log('Daily Notes NG loaded', { version: this.manifest.version });

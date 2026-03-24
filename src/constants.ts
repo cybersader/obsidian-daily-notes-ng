@@ -73,6 +73,15 @@ export const DEFAULT_SETTINGS: DailyNotesNGSettings = {
     creatorFieldName: 'creator',
     noteUuidProperty: 'dnngId',
     noteUuidAutoGenerate: true,
+    personPeriodicOverrides: [],
+    typeConfig: {
+      identityTypePropertyName: 'type',
+      personTypeValue: 'person',
+      groupTypeValue: 'group',
+      membersPropertyName: 'members',
+    },
+    personNotesFolder: '',
+    groupNotesFolder: '',
   },
   debug: false,
 };

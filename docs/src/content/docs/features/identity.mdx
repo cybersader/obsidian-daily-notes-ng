@@ -1,0 +1,100 @@
+---
+title: Multi-user identity
+description: Per-person journals, device registration, and creator attribution
+---
+
+Daily Notes NG supports **multi-user environments** where multiple people share the same vault via Obsidian Sync or git.
+
+## How it works
+
+Each device gets a unique ID (stored locally, never synced). You register that device to a **person note** in your vault. From then on, the plugin knows *who* is using *which device* and can:
+
+- Route daily notes to **per-person folders** (e.g., `Journal/Alice/Daily/`)
+- Apply **per-person templates**
+- Auto-set a **creator** field in frontmatter
+- Generate stable **note UUIDs** that survive renames
+
+## Setting up person notes
+
+Create a note with `type: person` in the frontmatter:
+
+```yaml
+---
+type: person
+title: Alice Smith
+timezone: America/New_York
+periodic:
+  daily:
+    folder: Journal/Alice/Daily
+    templatePath: Templates/Alice Daily.md
+---
+```
+
+The `periodic` block is optional — it lets each person define their own folder/template overrides.
+
+## Registering a device
+
+1. Go to **Settings > Daily Notes NG > Identity**
+2. Enable multi-user identity
+3. Under "Register this device", select your person note
+4. Click **Register**
+
+Each device shows up in the devices table with its name, associated person, and last seen time.
+
+## Per-person folders with `{{person}}`
+
+Instead of configuring each person individually, use the `{{person}}` placeholder in folder paths:
+
+```
+Journal/{{person}}/Daily
+```
+
+This resolves to `Journal/Alice Smith/Daily` on Alice's laptop and `Journal/Bob Jones/Daily` on Bob's iPad — from a single vault-wide setting.
+
+## Creator attribution
+
+When enabled, new periodic notes automatically get a creator field:
+
+```yaml
+---
+creator: "[[Alice Smith]]"
+---
+```
+
+Configure the field name in settings (default: `creator`).
+
+## Group notes
+
+Create group notes with `type: group` and a `members` list:
+
+```yaml
+---
+type: group
+title: Dev Team
+members:
+  - "[[Alice Smith]]"
+  - "[[Bob Jones]]"
+---
+```
+
+Groups can be nested (a group containing other groups). The plugin resolves all members recursively with cycle detection.
+
+## Resolution chain
+
+Settings are resolved in priority order:
+
+1. **Device preferences** (localStorage, highest priority)
+2. **Person note frontmatter** (`periodic` block)
+3. **Settings-based person overrides** (configured in settings UI)
+4. **Vault-wide config** (the default periodic notes settings)
+
+## Enterprise configuration
+
+For vaults that use different frontmatter conventions, all property names are configurable:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| Identity type property | `type` | Frontmatter key for person/group detection |
+| Person type value | `person` | Value that identifies person notes |
+| Group type value | `group` | Value that identifies group notes |
+| Members property | `members` | Frontmatter key for group member lists |

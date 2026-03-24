@@ -15,6 +15,24 @@ export interface DeviceUserMapping {
   userDisplayName?: string;
 }
 
+export interface PersonPeriodicOverride {
+  personNotePath: string;
+  personDisplayName: string;
+  overrides: Partial<Record<Periodicity, Partial<PeriodicConfig>>>;
+}
+
+export interface IdentityTypeConfig {
+  identityTypePropertyName: string;
+  personTypeValue: string;
+  groupTypeValue: string;
+  membersPropertyName: string;
+}
+
+export interface DevicePreferencesData {
+  deviceName?: string;
+  periodicOverrides?: Partial<Record<Periodicity, Partial<PeriodicConfig>>>;
+}
+
 export interface DailyNotesNGSettings {
   periodic: Record<Periodicity, PeriodicConfig>;
   calendar: {
@@ -57,6 +75,10 @@ export interface DailyNotesNGSettings {
     creatorFieldName: string;
     noteUuidProperty: string;
     noteUuidAutoGenerate: boolean;
+    personPeriodicOverrides: PersonPeriodicOverride[];
+    typeConfig: IdentityTypeConfig;
+    personNotesFolder: string;
+    groupNotesFolder: string;
   };
   debug: boolean;
 }
