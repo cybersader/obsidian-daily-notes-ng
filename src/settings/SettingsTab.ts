@@ -1,7 +1,76 @@
-import { App, PluginSettingTab, Setting } from 'obsidian';
+import { App, PluginSettingTab, Setting, AbstractInputSuggest, TFile } from 'obsidian';
 import type DailyNotesNGPlugin from '../main';
 import { ALL_PERIODICITIES, PERIODICITY_LABELS } from '../periodic/periodicity';
 import type { Periodicity } from '../periodic/periodicity';
+
+/**
+ * File path suggester that shows matching vault files as you type.
+ * Filters to person notes when the identity system can detect them.
+ */
+/**
+ * Folder path suggester for folder settings.
+ */
+class FolderSuggest extends AbstractInputSuggest<string> {
+  getSuggestions(query: string): string[] {
+    const lowerQuery = query.toLowerCase();
+    const folders = new Set<string>();
+    for (const file of this.app.vault.getMarkdownFiles()) {
+      const folder = file.parent?.path;
+      if (folder && folder !== '/' && folder.toLowerCase().includes(lowerQuery)) {
+        folders.add(folder);
+      }
+    }
+    return [...folders].sort().slice(0, 20);
+  }
+
+  renderSuggestion(folder: string, el: HTMLElement): void {
+    el.setText(folder);
+  }
+
+  selectSuggestion(folder: string): void {
+    (this as any).inputEl.value = folder;
+    (this as any).inputEl.dispatchEvent(new Event('input'));
+    this.close();
+  }
+}
+
+class FileSuggest extends AbstractInputSuggest<TFile> {
+  private plugin: DailyNotesNGPlugin;
+  private onSelectFile: (file: TFile) => void;
+
+  constructor(app: App, inputEl: HTMLInputElement, plugin: DailyNotesNGPlugin, onSelect: (file: TFile) => void) {
+    super(app, inputEl);
+    this.plugin = plugin;
+    this.onSelectFile = onSelect;
+  }
+
+  getSuggestions(query: string): TFile[] {
+    const lowerQuery = query.toLowerCase();
+    return this.app.vault.getMarkdownFiles()
+      .filter(f => {
+        // Match on path or basename
+        if (!f.path.toLowerCase().includes(lowerQuery) && !f.basename.toLowerCase().includes(lowerQuery)) {
+          return false;
+        }
+        // If person notes folder is configured, filter to that folder
+        const folder = this.plugin.settings.identity.personNotesFolder;
+        if (folder && !f.path.startsWith(folder)) {
+          return false;
+        }
+        return true;
+      })
+      .slice(0, 20);
+  }
+
+  renderSuggestion(file: TFile, el: HTMLElement): void {
+    el.setText(file.path);
+  }
+
+  selectSuggestion(file: TFile): void {
+    this.onSelectFile(file);
+    this.close();
+  }
+}
 
 /**
  * Main settings tab for Daily Notes NG.
@@ -49,12 +118,13 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
         new Setting(containerEl)
           .setName(`${label} folder`)
           .setDesc(`Folder for ${label.toLowerCase()} notes. Use {{person}} for per-person folders.`)
-          .addText((text) =>
+          .addText((text) => {
             text.setValue(config.folder).onChange(async (value) => {
               config.folder = value;
               await this.plugin.saveSettings();
-            })
-          );
+            });
+            new FolderSuggest(this.app, text.inputEl);
+          });
 
         new Setting(containerEl)
           .setName(`${label} format`)
@@ -69,12 +139,17 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
         new Setting(containerEl)
           .setName(`${label} template`)
           .setDesc('Path to template file')
-          .addText((text) =>
+          .addText((text) => {
             text.setValue(config.templatePath).onChange(async (value) => {
               config.templatePath = value;
               await this.plugin.saveSettings();
-            })
-          );
+            });
+            new FileSuggest(this.app, text.inputEl, this.plugin, (file) => {
+              config.templatePath = file.path;
+              text.setValue(file.path);
+              this.plugin.saveSettings();
+            });
+          });
       }
     }
   }
@@ -173,23 +248,31 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
           .setDisabled(true)
       );
 
-    // Register device to person note
-    new Setting(containerEl)
+    // Register device to person note (with autocomplete)
+    let selectedPath = currentUser ?? '';
+    const registerSetting = new Setting(containerEl)
       .setName('Register this device')
-      .setDesc('Path to a person note (e.g., People/Alice Smith.md)')
-      .addText((text) =>
+      .setDesc('Select a person note to associate with this device')
+      .addText((text) => {
         text
-          .setPlaceholder('People/Alice Smith.md')
-          .setValue(currentUser ?? '')
-          .onChange(() => {}) // Handled by button
-      )
+          .setPlaceholder('Search for a person note...')
+          .setValue(selectedPath);
+
+        // Attach file suggester to the text input
+        new FileSuggest(this.app, text.inputEl, this.plugin, (file) => {
+          selectedPath = file.path;
+          text.setValue(file.path);
+        });
+
+        text.onChange((value) => {
+          selectedPath = value;
+        });
+      })
       .addButton((btn) =>
         btn.setButtonText('Register').onClick(async () => {
-          const input = containerEl.querySelector<HTMLInputElement>(
-            '.setting-item:nth-last-child(1) input[type="text"]'
-          );
-          if (input?.value) {
-            this.plugin.userRegistry.registerDevice(input.value);
+          if (selectedPath) {
+            const displayName = selectedPath.replace(/\.md$/, '').split('/').pop();
+            this.plugin.userRegistry.registerDevice(selectedPath, displayName);
             await this.plugin.saveSettings();
             this.display();
           }
@@ -272,22 +355,24 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName('Person notes folder')
       .setDesc('Folder to scan for person notes (empty for entire vault)')
-      .addText((text) =>
+      .addText((text) => {
         text.setValue(this.plugin.settings.identity.personNotesFolder).onChange(async (value) => {
           this.plugin.settings.identity.personNotesFolder = value;
           await this.plugin.saveSettings();
-        })
-      );
+        });
+        new FolderSuggest(this.app, text.inputEl);
+      });
 
     new Setting(containerEl)
       .setName('Group notes folder')
       .setDesc('Folder to scan for group notes (empty for entire vault)')
-      .addText((text) =>
+      .addText((text) => {
         text.setValue(this.plugin.settings.identity.groupNotesFolder).onChange(async (value) => {
           this.plugin.settings.identity.groupNotesFolder = value;
           await this.plugin.saveSettings();
-        })
-      );
+        });
+        new FolderSuggest(this.app, text.inputEl);
+      });
 
     // Enterprise type configuration
     new Setting(containerEl).setName('Advanced type configuration').setHeading();
