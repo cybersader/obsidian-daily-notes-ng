@@ -1,10 +1,10 @@
 # Dependencies
 node_modules/
 
-# Build outputs
-main.js
-main.js.map
-styles.css
+# Build outputs (root level only, not src/)
+/main.js
+/main.js.map
+/styles.css
 *.js.map
 
 # Test coverage

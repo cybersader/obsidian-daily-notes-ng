@@ -1,0 +1,83 @@
+/* Daily Notes NG - Plugin Styles */
+/* All classes prefixed with .dnng- to avoid conflicts */
+
+.dnng-calendar-container {
+  padding: 8px;
+}
+
+.dnng-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.dnng-calendar-day {
+  text-align: center;
+  padding: 4px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.dnng-calendar-day:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.dnng-calendar-day.dnng-today {
+  font-weight: bold;
+  color: var(--text-accent);
+}
+
+.dnng-calendar-day.dnng-has-note {
+  position: relative;
+}
+
+.dnng-calendar-day.dnng-has-note::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--text-accent);
+}
+
+.dnng-calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0 8px;
+}
+
+.dnng-calendar-nav-btn {
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.dnng-calendar-nav-btn:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.dnng-breadcrumb {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.dnng-breadcrumb a {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.dnng-breadcrumb a:hover {
+  color: var(--text-accent);
+}
+
+.dnng-breadcrumb-separator {
+  color: var(--text-faint);
+}
