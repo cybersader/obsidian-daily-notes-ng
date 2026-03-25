@@ -1,0 +1,205 @@
+---
+title: Folder notes integration
+description: How to use Daily Notes NG with LostPaul's Folder Notes plugin for attachment-friendly periodic notes
+sidebar:
+  order: 3
+---
+
+Daily Notes NG integrates with [LostPaul's Folder Notes](https://github.com/LostPaul/obsidian-folder-notes) plugin to create periodic notes that act as folders — allowing attachments, sub-notes, and related files to nest directly under each note.
+
+## Why folder notes?
+
+Without folder notes, attachments for a daily note go to a global attachments folder:
+
+```
+Journal/Daily/
+├── 2026-03-24.md
+├── 2026-03-25.md
+_attachments/
+├── screenshot-20260324.png    ← Which note does this belong to?
+├── meeting-notes.pdf
+└── diagram.excalidraw
+```
+
+With folder-note mode, each note IS a folder, and attachments live right under it:
+
+```
+Journal/Daily/
+├── Daily.base                   ← Auto-generated MOC (dashboard)
+├── 2026-03-24/
+│   ├── 2026-03-24.md            ← The daily note (click folder to open)
+│   ├── screenshot.png           ← Belongs to this day
+│   └── meeting-notes.pdf
+└── 2026-03-25/
+    ├── 2026-03-25.md
+    └── diagram.excalidraw
+```
+
+## Setup
+
+### Step 1: Install Folder Notes
+
+Install [Folder Notes](https://github.com/LostPaul/obsidian-folder-notes) from Community Plugins if you haven't already.
+
+### Step 2: Enable folder-note mode in Daily Notes NG
+
+Go to **Settings > Daily Notes NG > Folder notes** and enable:
+
+- **Folder-note mode** — changes note creation from `YYYY-MM-DD.md` to `YYYY-MM-DD/YYYY-MM-DD.md`
+- **Auto-generate periodic index** — creates a `.base` MOC in each periodic folder
+
+### Step 3: Configure Folder Notes plugin
+
+Go to **Settings > Folder Notes** and verify these settings:
+
+| Setting | Recommended value | Why |
+|---------|------------------|-----|
+| **Auto create** | **Off** | Prevents duplicate "File already exists" errors. Daily Notes NG creates its own folder notes. |
+| **Storage location** | Inside folder | Default — folder note lives inside its folder |
+| **Folder note name** | `{{folder_name}}` | Default — matches folder name |
+| **Supported file types** | md, canvas, **base** | Must include `base` so `.base` MOCs are recognized as folder notes |
+| **Hide folder note** | On | Default — hides the folder note from the file explorer (click folder to open it) |
+
+> **Important**: Keep **Auto create OFF**. When it's on, Folder Notes tries to create a folder note for each new subfolder that Daily Notes NG creates. Since our plugin already creates the note with that name, you'll get "File already exists" errors. They're non-fatal but noisy.
+
+### Step 4: Configure Obsidian attachment folder (optional)
+
+For attachments to land inside the note's folder, set Obsidian's attachment folder to use the current note's folder:
+
+1. Go to **Settings > Files and links**
+2. Set **Default location for new attachments** to **Same folder as current file**
+
+Now when you paste an image or drag a file into a daily note, it lands in `2026-03-24/` alongside the note.
+
+## How it works
+
+### The `.base` MOC
+
+When you create your first periodic note in a folder, Daily Notes NG auto-generates a `.base` file (e.g., `Daily.base`). This file:
+
+- Acts as the **folder note** for the periodic folder (Folder Notes opens it when you click the folder)
+- Shows a **table view** of all notes in that folder with columns for day of week, estimated word count, and creation date
+- Shows a **cards view** as an alternative layout
+- Uses `file.inFolder(this.file.folder)` — completely portable, no hardcoded paths
+
+The `.base` MOC is a standard [Obsidian Bases](https://help.obsidian.md/bases/syntax) file. You can customize it freely — add filters, change columns, add views.
+
+### Fallback path resolution
+
+Daily Notes NG always checks both flat and folder-note paths when looking for existing notes:
+
+```
+1. Try current mode's path:  Journal/Daily/2026-03-24/2026-03-24.md
+2. Fallback to other mode:   Journal/Daily/2026-03-24.md
+```
+
+This means you can **toggle folder-note mode at any time** without losing access to existing notes. Notes created in flat mode are still found after switching to folder-note mode, and vice versa.
+
+New notes are always created in the currently configured mode.
+
+## Workflow paths
+
+### Path A: Simple (no Folder Notes plugin)
+
+Just use Daily Notes NG with default settings. Notes are flat files:
+
+```
+Journal/Daily/
+├── Daily.base            ← Auto-generated index
+├── 2026-03-24.md
+└── 2026-03-25.md
+```
+
+Best for: users who don't need per-note attachments, prefer simplicity.
+
+### Path B: Folder notes + attachments
+
+Install Folder Notes, enable folder-note mode:
+
+```
+Journal/Daily/
+├── Daily.base            ← Click "Daily" folder → opens this dashboard
+├── 2026-03-24/
+│   ├── 2026-03-24.md     ← Click "2026-03-24" folder → opens this note
+│   ├── photo.jpg
+│   └── meeting.pdf
+└── 2026-03-25/
+    └── 2026-03-25.md
+```
+
+Best for: heavy daily note users who attach files, screenshots, PDFs to their notes.
+
+### Path C: Multi-user + folder notes
+
+Enable both [identity](/obsidian-daily-notes-ng/features/identity/) and folder-note mode:
+
+```
+Journal/
+├── Alice Smith/
+│   ├── Alice Smith.base  ← Alice's MOC (auto-generated)
+│   ├── Daily/
+│   │   ├── Daily.base    ← Daily index for Alice
+│   │   └── 2026-03-24/
+│   │       ├── 2026-03-24.md   ← creator: [[Alice Smith]]
+│   │       └── lab-results.pdf
+│   └── Weekly/
+│       ├── Weekly.base
+│       └── 2026-W13/
+│           └── 2026-W13.md
+└── Bob Jones/
+    ├── Bob Jones.base
+    └── Daily/
+        ├── Daily.base
+        └── 2026-03-24/
+            └── 2026-03-24.md   ← creator: [[Bob Jones]]
+```
+
+Best for: shared vaults (teams, families, research groups) where each person has their own journal with attachments.
+
+## Companion plugins
+
+These plugins work well alongside Daily Notes NG + Folder Notes:
+
+| Plugin | What it adds | Notes |
+|--------|-------------|-------|
+| [**Folder Notes**](https://github.com/LostPaul/obsidian-folder-notes) | Click-to-open folder notes, file explorer integration | Keep **Auto create OFF** |
+| [**Templater**](https://github.com/SilentVoid13/Templater) | Advanced template syntax (`<% %>` tags) | Enable **Trigger on new file creation** for auto-processing |
+| [**Dataview**](https://github.com/blacksmithgu/obsidian-dataview) | Query periodic notes with DQL/JS | Sees all notes including folder-note pattern |
+| [**Linter**](https://github.com/platers/obsidian-linter) | Auto-format frontmatter, headings | May conflict with frontmatter date tracking — use one or the other |
+| [**Update Frontmatter Modified Date**](https://github.com/alangrainger/obsidian-frontmatter-modified-date) | Conservative modified-date tracking | Disable Daily Notes NG's built-in tracking if using this instead |
+
+## Troubleshooting
+
+### "File already exists" error
+
+**Cause**: Folder Notes plugin has **Auto create** enabled. When Daily Notes NG creates `2026-03-24/2026-03-24.md`, Folder Notes also tries to create a folder note for the `2026-03-24/` folder.
+
+**Fix**: Disable **Auto create** in Folder Notes settings.
+
+### `.base` file not showing as folder note
+
+**Cause**: Folder Notes doesn't have `base` in its supported file types.
+
+**Fix**: Go to **Settings > Folder Notes > Supported file types** and ensure `base` is listed (it is by default since v1.8.17).
+
+### Template variables not resolved (`{{title}}` appears literally)
+
+**Cause**: Templater is installed but **Trigger on new file creation** is off. Daily Notes NG detects Templater and expects it to process the template, but Templater never runs.
+
+**Fix**: Either:
+- Enable **Trigger on new file creation** in Templater settings (so Templater processes our templates), or
+- Daily Notes NG automatically falls back to its built-in engine when this setting is off (fixed in v0.1.0+)
+
+### Attachments going to wrong folder
+
+**Cause**: Obsidian's attachment folder is set to a global path instead of relative.
+
+**Fix**: Set **Settings > Files and links > Default location for new attachments** to **Same folder as current file**.
+
+## Related pages
+
+- [Folder-note mode settings](/obsidian-daily-notes-ng/reference/settings/#folder-notes)
+- [Multi-user identity](/obsidian-daily-notes-ng/features/identity/) — per-person folders
+- [Periodic notes](/obsidian-daily-notes-ng/features/periodic-notes/) — folder and format configuration
+- [Templates](/obsidian-daily-notes-ng/features/templates/) — Templater integration
+- [Glossary](/obsidian-daily-notes-ng/concepts/glossary/) — terminology definitions

@@ -54,6 +54,21 @@ Folder: Journal/{{person}}/Daily
 
 This creates separate folder trees per person without any additional configuration. See [per-person folders](/obsidian-daily-notes-ng/features/identity/#per-person-folders-with-person) for details.
 
+## Folder-note mode
+
+Enable **folder-note mode** in settings to store each periodic note as a folder:
+
+```
+Off: Journal/Daily/2026-03-24.md
+On:  Journal/Daily/2026-03-24/2026-03-24.md
+```
+
+When on, attachments (images, PDFs, Excalidraw files) pasted into a daily note land in the same folder as the note. Works seamlessly with [LostPaul's Folder Notes](https://github.com/LostPaul/obsidian-folder-notes) plugin — clicking the `2026-03-24` folder opens the note.
+
+A `.base` MOC dashboard is auto-generated in each periodic folder, showing all notes with date, word count, and tags.
+
+See the full [folder notes integration guide](/obsidian-daily-notes-ng/guides/folder-notes/) for setup and companion plugin recommendations.
+
 ## Navigation commands
 
 See [commands reference](/obsidian-daily-notes-ng/reference/commands/) for the full list. Key commands:
@@ -68,3 +83,4 @@ See [commands reference](/obsidian-daily-notes-ng/reference/commands/) for the f
 - [Multi-user identity](/obsidian-daily-notes-ng/features/identity/) — Per-person folders and templates
 - [Settings reference](/obsidian-daily-notes-ng/reference/settings/) — Full periodic notes settings
 - [Commands reference](/obsidian-daily-notes-ng/reference/commands/) — Navigation commands
+- [Folder notes guide](/obsidian-daily-notes-ng/guides/folder-notes/) — Attachment-friendly folder-note mode

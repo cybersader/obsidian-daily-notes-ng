@@ -77,6 +77,36 @@ The set of variables available for substitution in templates. Built-in variables
 ### Templater bridge
 The integration layer that detects the [Templater plugin](https://github.com/SilentVoid13/Templater) and delegates template processing to it. When Templater is installed, you can use `<% %>` syntax in periodic note templates.
 
+## Folder notes
+
+### Folder note
+A note that represents a folder. When you click the folder in the file explorer, it opens the note instead of expanding the tree. Requires the [Folder Notes plugin](https://github.com/LostPaul/obsidian-folder-notes). In Daily Notes NG, each periodic note can optionally be a folder note (see [folder-note mode](#folder-note-mode)).
+
+### Folder-note mode
+A setting that changes how periodic notes are stored on disk. When enabled, each note becomes a folder containing the note file, allowing attachments to nest under it.
+
+- **Off**: `Journal/Daily/2026-03-24.md` (flat file)
+- **On**: `Journal/Daily/2026-03-24/2026-03-24.md` (folder note — attachments go alongside)
+
+See [folder notes guide](/obsidian-daily-notes-ng/guides/folder-notes/).
+
+### Periodic index (`.base` MOC)
+A `.base` file auto-generated at the root of each periodic notes folder. Acts as a dashboard showing all notes in that folder with date, word count, and tag columns. Recognized as the folder note for that directory by the Folder Notes plugin. Uses `file.inFolder(this.file.folder)` for portability.
+
+### Fallback path resolution
+The safety mechanism that checks both flat and folder-note paths when looking for existing notes. Ensures notes created in one mode are always found after toggling to the other mode. No migration needed when switching.
+
+## Companion plugins
+
+### Folder Notes plugin
+[LostPaul's Folder Notes](https://github.com/LostPaul/obsidian-folder-notes) — provides the click-to-open-folder-note behavior in the file explorer. Supports `.base` files as folder notes since v1.8.17. Keep **Auto create OFF** when using with Daily Notes NG. See [integration guide](/obsidian-daily-notes-ng/guides/folder-notes/).
+
+### Templater
+[SilentVoid13's Templater](https://github.com/SilentVoid13/Templater) — advanced template engine with `<% %>` syntax. Daily Notes NG's [Templater bridge](#templater-bridge) detects it and delegates template processing when **Trigger on new file creation** is enabled. When that setting is off, Daily Notes NG uses its built-in engine.
+
+### Dataview
+[Blacksmithgu's Dataview](https://github.com/blacksmithgu/obsidian-dataview) — query language for Obsidian notes. Sees all periodic notes regardless of flat vs folder-note storage. Use `dv.pages('"Journal/Daily"')` to query daily notes.
+
 ## Testing
 
 ### Test vault
