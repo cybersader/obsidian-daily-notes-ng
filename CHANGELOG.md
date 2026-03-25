@@ -1,0 +1,27 @@
+# Changelog
+
+## [0.1.0] - 2026-03-24
+
+### Added
+- Initial scaffold with all source modules stubbed
+- Multi-user identity system: device IDs, person/group notes, per-note UUIDs
+- PeriodicConfigResolver: 4-layer resolution chain for per-person settings
+- Navigation commands: open today, prev/next for all five periodicities
+- Folder-note mode: store periodic notes as folders for attachment nesting
+- Auto-generated .base MOC indexes for periodic note folders
+- Calendar sidebar view (stub)
+- Template engine with Templater bridge
+- Todo rollover (stub)
+- Frontmatter date tracking (stub)
+- Natural language date suggestions via chrono-node
+- Settings UI with all sections: periodic, folder notes, calendar, identity, rollover, frontmatter, NLP, debug
+- Obsidian CLI skill for agentic testing workflow
+- Test fixtures companion plugin with generate/cleanup commands
+- Astro Starlight documentation site with 12 pages
+- GitHub Actions: release workflow + docs deployment to GitHub Pages
+- ESLint with obsidian-plugin community rules
+- 25 unit tests (DevicePreferences, PeriodicConfigResolver, periodicity, frontmatter)
+
+### Fixed
+- Templater bridge: check trigger_on_file_creation before delegating to avoid unresolved variables
+- .base MOC generation on opening existing notes (not just new note creation)
