@@ -7,50 +7,53 @@ sidebar:
 
 ## Module map
 
-Daily Notes NG is organized into feature modules that communicate through the plugin's main class (`DailyNotesNGPlugin`). Each module has a single responsibility.
-
 ```
 ┌──────────────────────────────────────────────────────────┐
 │                    DailyNotesNGPlugin                     │
 │                      (src/main.ts)                        │
-│                                                          │
-│  Instantiates all managers, wires dependencies, registers│
-│  views/commands/event handlers on the Plugin lifecycle   │
 ├──────────────────────────────────────────────────────────┤
+│                                                          │
+│  settings.journals: JournalDefinition[]                  │
+│    Each journal: name, periodicity, folder, template,    │
+│                  scope (global/person/group), owner       │
 │                                                          │
 │  ┌─────────────────┐   ┌─────────────────┐              │
 │  │ PeriodicNote     │   │ CalendarView    │              │
 │  │ Manager          │   │ (ItemView)      │              │
 │  │ Creates/opens    │   │ Month grid      │              │
-│  │ periodic notes   │   │ sidebar         │              │
+│  │ notes per journal│   │ sidebar         │              │
 │  └────────┬────────┘   └─────────────────┘              │
 │           │                                              │
 │           ▼                                              │
 │  ┌─────────────────┐                                     │
-│  │ PeriodicConfig   │ ◄── Resolves effective config      │
-│  │ Resolver         │     for current device + user      │
+│  │ Journal          │ ◄── Filters journals by scope      │
+│  │ Resolver         │     for current device/user        │
 │  └────────┬────────┘                                     │
 │           │                                              │
 │     ┌─────┴──────┬──────────────┬──────────────┐        │
 │     ▼            ▼              ▼              ▼        │
 │  ┌────────┐ ┌──────────┐ ┌──────────┐ ┌────────────┐   │
-│  │Device  │ │Person    │ │User      │ │Device      │   │
-│  │Identity│ │Note      │ │Registry  │ │Preferences │   │
-│  │Manager │ │Service   │ │(mapping) │ │(localStorage│   │
-│  │(UUID)  │ │(frontm.) │ │          │ │ overrides) │   │
+│  │Device  │ │Person    │ │User      │ │Group       │   │
+│  │Identity│ │Note      │ │Registry  │ │Registry    │   │
+│  │Manager │ │Service   │ │(mapping) │ │(members)   │   │
 │  └────────┘ └──────────┘ └──────────┘ └────────────┘   │
 │                                                          │
 │  ┌─────────────────┐ ┌─────────────────┐                │
 │  │ TemplateEngine   │ │ TemplaterBridge │                │
-│  │ (built-in vars)  │ │ (delegates to   │                │
-│  │                  │ │  Templater)     │                │
+│  │ (built-in vars)  │ │ (delegates when │                │
+│  │                  │ │  trigger is on) │                │
 │  └─────────────────┘ └─────────────────┘                │
 │                                                          │
 │  ┌──────────┐ ┌──────────────┐ ┌──────────────────┐     │
 │  │ Todo     │ │ Frontmatter  │ │ DateSuggest      │     │
 │  │ Rollover │ │ DateTracker  │ │ (EditorSuggest)  │     │
-│  │          │ │ (debounced)  │ │ + DateParser     │     │
 │  └──────────┘ └──────────────┘ └──────────────────┘     │
+│                                                          │
+│  ┌──────────────────────────────────┐                    │
+│  │ NavigationCommands               │                    │
+│  │ Journal-aware: picker when       │                    │
+│  │ multiple journals match          │                    │
+│  └──────────────────────────────────┘                    │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -60,56 +63,46 @@ When a user triggers "Open today's daily note":
 
 ```
 1. NavigationCommands
-   → calls periodicManager.openPeriodicNote(today, 'daily')
+   → asks JournalResolver.getJournalsForPeriodicity('daily')
+   → if 1 result: use it directly
+   → if 2+: show JournalPickerModal, user picks one
 
-2. PeriodicNoteManager
-   → asks PeriodicConfigResolver.resolve('daily')
-   → asks PeriodicConfigResolver.resolveFolder('daily')
-
-3. PeriodicConfigResolver
-   → checks DevicePreferences (localStorage)
-   → checks PersonNoteService (person frontmatter)
-   → checks settings.personPeriodicOverrides
-   → falls back to settings.periodic.daily
+2. PeriodicNoteManager.openPeriodicNote(date, journal)
+   → asks JournalResolver.resolveFolder(journal)
    → interpolates {{person}} in folder path
 
-4. PeriodicNoteManager (continued)
-   → checks if note exists at resolved path
-   → if not: creates folder, reads template, processes variables
-   → adds creator attribution (if identity enabled)
-   → generates note UUID (if configured)
-   → delegates to Templater (if installed) or built-in engine
-   → opens the note in the active editor leaf
+3. PeriodicNoteManager (continued)
+   → checks if note exists (both flat + folder-note paths)
+   → if exists: ensures .base MOC, opens the note
+   → if not: creates folder, applies template, adds creator
+     attribution, generates note UUID, opens the note
+
+4. Template processing
+   → if Templater installed + trigger_on_file_creation: delegates
+   → otherwise: built-in engine resolves {{title}}, {{date}},
+     {{time}}, {{person}}
 ```
 
-## Identity system data flow
+## Journal resolution flow
 
 ```
-┌─────────────────┐     ┌──────────────────────────────────┐
-│   localStorage   │     │     Plugin Settings (synced)     │
-│  (per-device,    │     │                                  │
-│   NOT synced)    │     │  deviceUserMappings: [           │
-│                  │     │    { deviceId: "abc",            │
-│  device-id:      │     │      userNotePath: "People/      │
-│    "abc-123..."  │     │        Alice.md",                │
-│                  │     │      deviceName: "Windows PC",   │
-│  device-prefs:   │     │      lastSeen: 1711234567 }     │
-│    { periodic:   │     │  ]                               │
-│      daily:      │     │                                  │
-│        folder:   │     │  personPeriodicOverrides: [...]  │
-│          "..." } │     │  typeConfig: { ... }             │
-└────────┬────────┘     └───────────────┬──────────────────┘
-         │                              │
-         ▼                              ▼
 ┌─────────────────────────────────────────────────────────┐
-│              PeriodicConfigResolver                      │
+│                   JournalResolver                        │
 │                                                         │
-│  1. Device prefs (localStorage)      ← highest priority │
-│  2. Person note frontmatter                             │
-│  3. Settings-based person overrides                     │
-│  4. Vault-wide config                ← lowest priority  │
+│  Input: settings.journals (all journal definitions)     │
 │                                                         │
-│  Returns: effective PeriodicConfig for this device+user │
+│  Filter by enabled:                                     │
+│    → skip disabled journals                             │
+│                                                         │
+│  Filter by scope:                                       │
+│    → global: always included                            │
+│    → person: only if ownerPath matches current user     │
+│    → group: only if current user is in group members    │
+│                                                         │
+│  When identity disabled:                                │
+│    → only global journals returned                      │
+│                                                         │
+│  Output: JournalDefinition[] available to this device   │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -117,18 +110,21 @@ When a user triggers "Open today's daily note":
 
 | Layer | Where | Synced? | Contains |
 |-------|-------|---------|----------|
-| **localStorage** | Browser storage | No | Device ID, device preferences |
-| **Plugin settings** | `.obsidian/plugins/daily-notes-ng/data.json` | Yes (Obsidian Sync) | All config, device-to-user mappings |
-| **Person note frontmatter** | `People/Alice.md` | Yes | Per-person periodic overrides, timezone |
+| **localStorage** | Browser | No | Device ID, device preferences |
+| **Plugin settings** | `data.json` | Yes | Journal definitions, device-to-user mappings, all config |
+| **Person note frontmatter** | `People/Alice.md` | Yes | Person preferences, timezone |
 | **Group note frontmatter** | `People/Dev Team.md` | Yes | Group membership list |
 | **Note frontmatter** | Any `.md` file | Yes | Note UUID, creator, dates |
+| **`.base` MOC** | Journal folder | Yes | Portable Bases query for folder contents |
 
 ## Key design decisions
 
-**Why localStorage for device identity?** Device IDs and device preferences must NOT sync. If Alice's iPad preferences synced to Bob's Mac, they'd override Bob's settings. `localStorage` is inherently per-device.
+**Why named journals instead of one-per-periodicity?** Users need multiple daily journals (personal, work, team). The old model forced everything into one folder. Named journals let each context have its own destination.
 
-**Why a resolution chain?** Shared vaults need layered configuration. A team sets vault-wide defaults, individual members customize via their person note, and a specific device can further override (e.g., a tablet with different folder preferences).
+**Why scope-based visibility?** In a shared vault, Alice shouldn't see Bob's personal journal in her command palette. Scopes ensure each device only shows relevant journals.
 
-**Why `{{person}}` interpolation?** Most multi-user setups want the same structure per person (e.g., `Journal/<name>/Daily`). The placeholder avoids duplicating the full config for each person.
+**Why `{{person}}` interpolation?** For the common case where journals share the same structure per person. `Journal/{{person}}/Daily` avoids duplicating journal definitions for each user.
 
-**Why configurable type properties?** Enterprise vaults may use `role: team-member` instead of `type: person`. Making property names configurable ensures compatibility without forking.
+**Why auto-migration?** Users upgrading from the old per-periodicity config shouldn't lose their settings. The migration converts each enabled periodicity to a global journal.
+
+**Why a journal picker instead of per-journal commands?** Dynamically registering a command for each journal would clutter the command palette. The picker appears only when disambiguation is needed.

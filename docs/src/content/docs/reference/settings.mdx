@@ -7,22 +7,29 @@ sidebar:
 
 All settings are accessed via **Settings > Daily Notes NG**.
 
-## Periodic notes
+## Journals
 
-Each [periodicity](/obsidian-daily-notes-ng/concepts/glossary/#periodicity) (daily, weekly, monthly, quarterly, yearly) has independent settings.
+The core of the plugin. Each [journal](/obsidian-daily-notes-ng/features/periodic-notes/) is a named destination for periodic notes.
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| Enable | `true` (daily), `false` (others) | Whether this periodicity is active |
-| Folder | `Journal/<Periodicity>` | Where notes are stored. Supports [`{{person}}`](/obsidian-daily-notes-ng/features/identity/#per-person-folders-with-person) placeholder. |
-| Format | varies | [Moment.js format](https://momentjs.com/docs/#/displaying/format/) for filenames |
-| Template | (empty) | Path to template file. See [templates](/obsidian-daily-notes-ng/features/templates/). |
+**Add journal** button creates a new journal with defaults. Each journal card shows:
 
-### Default formats
+| Field | Description |
+|-------|-------------|
+| Name | Human-readable label (e.g., "Personal", "Work standup") |
+| Periodicity | daily, weekly, monthly, quarterly, or yearly |
+| Folder | Where notes are created. Supports `{{person}}` [interpolation](/obsidian-daily-notes-ng/features/identity/#per-person-folders-with-person). Autocomplete available. |
+| Date format | [Moment.js format](https://momentjs.com/docs/#/displaying/format/) for filenames |
+| Template | Path to template file. Autocomplete available. |
+| Scope | **Global** (everyone), **Person** (one user), or **Group** (team members) |
+| Owner | Person or group note path (for non-global scopes). Autocomplete available. |
+| Enabled | Toggle on/off |
+| Remove | Delete this journal definition |
+
+### Default date formats
 
 | Periodicity | Format | Example |
 |-------------|--------|---------|
-| Daily | `YYYY-MM-DD` | `2026-03-24` |
+| Daily | `YYYY-MM-DD` | `2026-03-25` |
 | Weekly | `gggg-[W]WW` | `2026-W13` |
 | Monthly | `YYYY-MM` | `2026-03` |
 | Quarterly | `YYYY-[Q]Q` | `2026-Q1` |
@@ -30,116 +37,106 @@ Each [periodicity](/obsidian-daily-notes-ng/concepts/glossary/#periodicity) (dai
 
 ## Folder notes
 
-See [folder notes guide](/obsidian-daily-notes-ng/guides/folder-notes/) for setup instructions.
+See [folder notes guide](/obsidian-daily-notes-ng/guides/folder-notes/) for setup.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| Folder-note mode | `false` | Store notes as `YYYY-MM-DD/YYYY-MM-DD.md` (folder) instead of `YYYY-MM-DD.md` (flat). Enables attachment nesting. |
-| Auto-generate periodic index | `true` | Create a `.base` MOC dashboard in each periodic folder on first note creation |
-| Base MOC template | (built-in) | Advanced: custom YAML content for auto-generated `.base` files |
+| Folder-note mode | `false` | Store notes as `YYYY-MM-DD/YYYY-MM-DD.md` instead of flat. Enables attachment nesting. |
+| Auto-generate periodic index | `true` | Create a `.base` MOC dashboard in each journal folder |
+| Base MOC template | (built-in) | Advanced: custom YAML for auto-generated `.base` files |
 
 ## Calendar
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| Open on startup | `false` | Auto-open calendar sidebar when Obsidian starts |
-| Show week numbers | `true` | Display ISO week numbers in calendar |
-| Week start | `Monday` | First day of week: Sunday (0), Monday (1), or Saturday (6) |
-| Dot indicators | `true` | Show dots on days that have existing notes |
+| Open on startup | `false` | Auto-open calendar sidebar |
+| Show week numbers | `true` | Display ISO week numbers |
+| Week start | `Monday` | First day of week |
+| Dot indicators | `true` | Show dots for days with notes |
 
 ## Identity
 
-See [multi-user identity](/obsidian-daily-notes-ng/features/identity/) for detailed explanations.
+See [multi-user identity](/obsidian-daily-notes-ng/features/identity/).
 
 ### Core
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| Enable multi-user identity | `false` | Master toggle for the entire identity system |
+| Enable multi-user identity | `false` | Master toggle for the identity system |
 
 ### Device registration
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| This device | (read-only) | Shows device name, ID prefix, and registered person |
-| Register this device | — | Path to a [person note](/obsidian-daily-notes-ng/concepts/glossary/#person-note) + Register button |
-| Registered devices | — | Table of all device-to-user mappings with Remove buttons |
+| Setting | Description |
+|---------|-------------|
+| This device | (read-only) Device name, ID prefix, registered person |
+| Register this device | Person note path with autocomplete + Register button |
+| Registered devices | Table of all mappings with Remove buttons |
 
 ### Attribution
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| Auto-set creator on new notes | `false` | Add [creator attribution](/obsidian-daily-notes-ng/features/identity/#creator-attribution) frontmatter |
-| Creator field name | `creator` | Frontmatter property name for creator |
+| Auto-set creator | `false` | Add [creator](/obsidian-daily-notes-ng/concepts/glossary/#creator-attribution) frontmatter |
+| Creator field name | `creator` | Frontmatter property name |
 
 ### Note identity
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| UUID property name | `dnngId` | Frontmatter property for [note UUIDs](/obsidian-daily-notes-ng/features/identity/#note-uuids). Empty to disable. |
-| Auto-generate UUIDs | `true` | Generate UUID when creating new periodic notes |
+| UUID property name | `dnngId` | Frontmatter property for [note UUIDs](/obsidian-daily-notes-ng/concepts/glossary/#note-uuid). Empty to disable. |
+| Auto-generate UUIDs | `true` | Generate UUID on new notes |
 
 ### Discovery
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| Person notes folder | (empty) | Folder to scan for person notes. Empty = entire vault. |
-| Group notes folder | (empty) | Folder to scan for group notes. Empty = entire vault. |
+| Person notes folder | (empty) | Folder to scan for person notes. Empty = entire vault. Autocomplete available. |
+| Group notes folder | (empty) | Folder to scan for group notes. Autocomplete available. |
 
 ### Advanced type configuration
-
-For [enterprise compatibility](/obsidian-daily-notes-ng/features/identity/#enterprise-configuration):
 
 | Setting | Default | Description |
 |---------|---------|-------------|
 | Identity type property | `type` | Frontmatter key for person/group detection |
-| Person type value | `person` | Value that identifies person notes |
-| Group type value | `group` | Value that identifies group notes |
-| Members property | `members` | Frontmatter key for group member lists |
+| Person type value | `person` | Value identifying person notes |
+| Group type value | `group` | Value identifying group notes |
+| Members property | `members` | Key for group member lists |
 
 ## Todo rollover
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| Enable todo rollover | `false` | Carry incomplete checkboxes from previous daily note |
-| Include sub-items | `true` | Also carry forward nested items under incomplete todos |
-| Delete completed | `false` | Remove `- [x]` items from the previous note |
-
-See [todo rollover](/obsidian-daily-notes-ng/features/todo-rollover/).
+| Enable | `false` | Carry incomplete checkboxes from previous note |
+| Include sub-items | `true` | Also carry nested items |
+| Delete completed | `false` | Remove completed items from previous note |
 
 ## Frontmatter dates
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| Track dates | `true` | Auto-populate created/modified dates |
-| Created key | `date created` | Frontmatter property for creation date |
-| Modified key | `date modified` | Frontmatter property for modification date |
-| Date format | `YYYY-MM-DDTHH:mm:ssZ` | Moment.js format for date values |
-| Delay | `10000` | Debounce in milliseconds before writing modified date |
-
-See [frontmatter dates](/obsidian-daily-notes-ng/features/frontmatter-dates/).
+| Track dates | `true` | Auto-populate created/modified |
+| Created key | `date created` | Property name |
+| Modified key | `date modified` | Property name |
+| Date format | ISO 8601 | Moment.js format |
+| Delay | `10000` | Debounce in ms |
 
 ## Natural language dates
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| Enable date suggestions | `true` | Toggle inline date suggestions |
-| Trigger character | `@` | Character that activates the suggestion popup |
-| Date format | `YYYY-MM-DD` | Format for inserted dates |
-| Insert as link | `true` | Wrap inserted dates in `[[wikilinks]]` |
-
-See [natural language dates](/obsidian-daily-notes-ng/features/natural-language-dates/).
+| Enable | `true` | Toggle inline suggestions |
+| Trigger character | `@` | Character activating suggestions |
+| Date format | `YYYY-MM-DD` | Output format |
+| Insert as link | `true` | Wrap in wikilinks |
 
 ## Templates
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| Use Templater | `true` | Delegate to Templater plugin when available |
-
-See [templates](/obsidian-daily-notes-ng/features/templates/) and [Templater integration](/obsidian-daily-notes-ng/guides/templater-integration/).
+| Use Templater | `true` | Delegate to Templater when available |
 
 ## Debug
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| Enable debug logging | `false` | Write debug events to `debug.log` in vault root |
+| Enable debug logging | `false` | Write to `debug.log` |

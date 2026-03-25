@@ -156,31 +156,26 @@ members:
 Groups support **nesting**: a group can contain other groups. The plugin resolves all members recursively with cycle detection (max depth 10) and deduplication.
 
 Use groups for:
+- Group-scoped [journals](/obsidian-daily-notes-ng/features/periodic-notes/#group-journals) (e.g., "Team retro")
 - Team-scoped Dataview/Bases queries
-- Future: shared journal entries attributed to group members
+- Shared journal entries attributed to group members
 
-## Resolution chain
+## How identity interacts with journals
 
-When determining the effective settings for a periodic note, the plugin walks a 4-layer chain. Each layer can partially override the layer below — only non-undefined fields take effect.
+The identity system controls **which journals each device can see**. The [journal resolver](/obsidian-daily-notes-ng/concepts/glossary/#journal-resolver) filters the journal list:
 
 ```
-Priority
-  ▲
-  │   ┌─────────────────────────────┐
-  │   │ 1. Device preferences       │  localStorage (NOT synced)
-  │   │    Per-device overrides      │  Highest priority
-  │   ├─────────────────────────────┤
-  │   │ 2. Person note frontmatter  │  periodic: block in person note
-  │   │    Per-person overrides      │
-  │   ├─────────────────────────────┤
-  │   │ 3. Settings-based overrides  │  personPeriodicOverrides array
-  │   │    Configured in settings UI │  in plugin settings
-  │   ├─────────────────────────────┤
-  │   │ 4. Vault-wide config         │  settings.periodic[periodicity]
-  │   │    Default for everyone      │  Lowest priority
-  │   └─────────────────────────────┘
+All journals in vault
   │
+  ├── Global journals      → always visible
+  ├── Person journals      → visible only if ownerPath matches registered user
+  └── Group journals       → visible only if registered user is a group member
+
+Identity disabled?
+  → only global journals shown
 ```
+
+This is simpler than a layered override system — each journal is a complete, standalone definition. If Alice needs different settings than the global "Daily" journal, she creates her own person-scoped "Alice daily" journal with its own folder and template.
 
 **Example**: Alice's person note sets `daily.folder` to `Journal/Alice/Daily`. Bob has no overrides. The vault-wide config is `Journal/Daily`.
 - On Alice's device: daily notes go to `Journal/Alice/Daily` (layer 2 overrides layer 4)

@@ -1,86 +1,134 @@
 ---
-title: Periodic notes
-description: Daily, weekly, monthly, quarterly, and yearly notes with independent configurations
+title: Journals
+description: Named journals with independent folders, templates, periodicities, and ownership scopes
 sidebar:
   order: 1
+  label: Journals (periodic notes)
 ---
 
-Daily Notes NG supports five [periodicities](/obsidian-daily-notes-ng/concepts/glossary/#periodicity), each with independent configuration for folder, filename format, and template.
+Daily Notes NG uses **named journals** — each journal is a destination for periodic notes with its own folder, template, date format, and ownership scope. This replaces the traditional "one folder per periodicity" model.
 
-## How it works
+## What is a journal?
 
-When you trigger a command like "Open today's daily note", the plugin:
+A journal definition includes:
 
-1. Resolves the effective configuration through the [resolution chain](/obsidian-daily-notes-ng/concepts/glossary/#resolution-chain) (accounting for [multi-user identity](/obsidian-daily-notes-ng/features/identity/) if enabled)
-2. Computes the filename from the date and format string
-3. Checks if the note already exists at the resolved folder path
-4. If not, creates it: makes folders, applies the template, adds [creator attribution](/obsidian-daily-notes-ng/features/identity/#creator-attribution) and [note UUID](/obsidian-daily-notes-ng/features/identity/#note-uuids) if configured
-5. Opens the note in the active editor
+| Field | Description | Example |
+|-------|-------------|---------|
+| **Name** | Human-readable label | "Personal", "Work standup" |
+| **Periodicity** | How often: daily, weekly, monthly, quarterly, yearly | `daily` |
+| **Folder** | Where notes are created | `Journal/Alice/Daily` |
+| **Format** | Moment.js date format for filenames | `YYYY-MM-DD` |
+| **Template** | Path to template file | `Templates/Standup.md` |
+| **Scope** | Who can use it: global, person, or group | `person` |
+| **Owner** | Person or group note path (for non-global scopes) | `People/Alice.md` |
 
-## Configuration
+## Scopes
 
-Each periodicity can be enabled separately in **Settings > Periodic notes**:
-
-- **Folder** — Where notes are stored. Supports [`{{person}}`](/obsidian-daily-notes-ng/features/identity/#per-person-folders-with-person) for multi-user vaults.
-- **Format** — [Moment.js format string](https://momentjs.com/docs/#/displaying/format/) for filenames
-- **Template** — Path to a template file applied on creation. See [templates](/obsidian-daily-notes-ng/features/templates/).
-
-## Default formats
-
-| Periodicity | Default format | Example filename |
-|-------------|---------------|-----------------|
-| Daily | `YYYY-MM-DD` | `2026-03-24` |
-| Weekly | `gggg-[W]WW` | `2026-W13` |
-| Monthly | `YYYY-MM` | `2026-03` |
-| Quarterly | `YYYY-[Q]Q` | `2026-Q1` |
-| Yearly | `YYYY` | `2026` |
-
-## Nested folder structures
-
-Using slashes in the format string automatically creates subdirectories:
+### Global journals
+Available to everyone in the vault. No identity system needed.
 
 ```
-Format: YYYY/MM-MMMM/YYYY-MM-DD-dddd
-Result: 2026/03-March/2026-03-24-Tuesday.md
+{ name: "HQ bulletin", scope: "global", folder: "HQ/Bulletin" }
 ```
 
-## Multi-user periodic notes
-
-When the [identity system](/obsidian-daily-notes-ng/features/identity/) is enabled, each person can have their own folders and templates. The simplest setup uses the `{{person}}` placeholder:
+### Person journals
+Only visible to the person whose device is registered to the owner note. Requires the [identity system](/obsidian-daily-notes-ng/features/identity/) to be enabled.
 
 ```
-Folder: Journal/{{person}}/Daily
+{ name: "Personal", scope: "person", ownerPath: "People/Alice.md", folder: "Journal/Alice/Daily" }
 ```
 
-This creates separate folder trees per person without any additional configuration. See [per-person folders](/obsidian-daily-notes-ng/features/identity/#per-person-folders-with-person) for details.
+### Group journals
+Visible to all members of a [group note](/obsidian-daily-notes-ng/concepts/glossary/#group-note). The plugin resolves group membership recursively (nested groups supported).
+
+```
+{ name: "Team retro", scope: "group", ownerPath: "People/Dev Team.md", folder: "Teams/Dev/Retro" }
+```
+
+## Example setup
+
+A user named Alice might have:
+
+```
+Journals:
+├── Personal journal    daily   → Journal/Alice/Daily       (person)
+├── Work standup        daily   ��� Teams/Dev/Standup         (group)
+├── Research log        weekly  → Research/Weekly           (person)
+├── HQ bulletin         daily   → HQ/Bulletin              (global)
+└── Monthly review      monthly → Reviews/Monthly          (global)
+```
+
+When Alice triggers "open today's daily note":
+- If she has **one** enabled daily journal → opens it directly
+- If she has **multiple** daily journals (Personal, Work standup, HQ bulletin) → a **[journal picker](#journal-picker)** appears
+
+## Journal picker
+
+When multiple journals share the same periodicity, the command palette triggers a fuzzy picker:
+
+```
+Pick a journal...
+├── Personal
+├── Work standup (group)
+└── HQ bulletin
+```
+
+Select one to create or open the note in that journal's folder.
+
+## Creating a journal
+
+Go to **Settings > Journals > Add journal**, then configure:
+
+1. **Name** — descriptive label
+2. **Periodicity** — daily, weekly, monthly, quarterly, or yearly
+3. **Folder** — where notes go (supports [folder autocomplete](/obsidian-daily-notes-ng/reference/settings/) and [`{{person}}`](/obsidian-daily-notes-ng/features/identity/#per-person-folders-with-person) interpolation)
+4. **Date format** — [Moment.js format](https://momentjs.com/docs/#/displaying/format/) for filenames
+5. **Template** — path to template file (with [file autocomplete](/obsidian-daily-notes-ng/reference/settings/))
+6. **Scope** — global (everyone), person (one user), or group (team members)
+7. **Owner** — select a person or group note (for non-global scopes, with [autocomplete](/obsidian-daily-notes-ng/reference/settings/))
+
+## Default journals
+
+A fresh install creates 5 global journals matching the traditional periodic notes structure:
+
+| Name | Periodicity | Folder | Enabled |
+|------|-------------|--------|---------|
+| Daily | daily | `Journal/Daily` | Yes |
+| Weekly | weekly | `Journal/Weekly` | No |
+| Monthly | monthly | `Journal/Monthly` | No |
+| Quarterly | quarterly | `Journal/Quarterly` | No |
+| Yearly | yearly | `Journal/Yearly` | No |
+
+Edit, disable, remove, or add new journals for any workflow.
+
+## Migration from old settings
+
+Upgrading from an earlier version? The old per-periodicity config is automatically converted to journal definitions on first load. Your folders, formats, and templates are preserved — no action needed.
 
 ## Folder-note mode
 
-Enable **folder-note mode** in settings to store each periodic note as a folder:
+Enable **[folder-note mode](/obsidian-daily-notes-ng/guides/folder-notes/)** to store each periodic note as a folder. Attachments nest under the note:
 
 ```
 Off: Journal/Daily/2026-03-24.md
 On:  Journal/Daily/2026-03-24/2026-03-24.md
 ```
 
-When on, attachments (images, PDFs, Excalidraw files) pasted into a daily note land in the same folder as the note. Works seamlessly with [LostPaul's Folder Notes](https://github.com/LostPaul/obsidian-folder-notes) plugin — clicking the `2026-03-24` folder opens the note.
-
-A `.base` MOC dashboard is auto-generated in each periodic folder, showing all notes with date, word count, and tags.
-
-See the full [folder notes integration guide](/obsidian-daily-notes-ng/guides/folder-notes/) for setup and companion plugin recommendations.
+Works with all journals. A `.base` MOC dashboard is auto-generated in each journal folder.
 
 ## Navigation commands
 
-See [commands reference](/obsidian-daily-notes-ng/reference/commands/) for the full list. Key commands:
+| Command | Behavior |
+|---------|----------|
+| **Open today's daily note** | Opens the note (or shows picker if multiple daily journals) |
+| **Open previous/next** | Navigates within the current journal based on the active file |
 
-- **Open today's daily note** — creates or opens today's note
-- **Open previous/next** — navigates relative to the currently open periodic note
-- These work for all five periodicities
+When viewing a note that belongs to a journal, prev/next stays within that journal. See [commands reference](/obsidian-daily-notes-ng/reference/commands/).
 
 ## Related pages
 
-- [Templates](/obsidian-daily-notes-ng/features/templates/) — Template variables and Templater integration
-- [Multi-user identity](/obsidian-daily-notes-ng/features/identity/) — Per-person folders and templates
-- [Settings reference](/obsidian-daily-notes-ng/reference/settings/) — Full periodic notes settings
-- [Commands reference](/obsidian-daily-notes-ng/reference/commands/) — Navigation commands
-- [Folder notes guide](/obsidian-daily-notes-ng/guides/folder-notes/) — Attachment-friendly folder-note mode
+- [Multi-user identity](/obsidian-daily-notes-ng/features/identity/) — device registration, person/group scopes
+- [Folder notes guide](/obsidian-daily-notes-ng/guides/folder-notes/) — attachment-friendly storage mode
+- [Templates](/obsidian-daily-notes-ng/features/templates/) — template variables and Templater integration
+- [Settings reference](/obsidian-daily-notes-ng/reference/settings/) — full journals settings
+- [Glossary](/obsidian-daily-notes-ng/concepts/glossary/) — terminology definitions

@@ -7,22 +7,34 @@ sidebar:
 
 ## Core concepts
 
+### Journal (journal definition)
+A named destination for periodic notes. Each journal has a name, [periodicity](#periodicity), folder, date format, template, and [scope](#journal-scope). A vault can have many journals — "Personal", "Work standup", "HQ bulletin", etc. See [journals](/obsidian-daily-notes-ng/features/periodic-notes/).
+
 ### Periodicity
-One of five time granularities: **daily**, **weekly**, **monthly**, **quarterly**, or **yearly**. Each periodicity has its own folder, filename format, and template. See [periodic notes](/obsidian-daily-notes-ng/features/periodic-notes/).
+One of five time granularities: **daily**, **weekly**, **monthly**, **quarterly**, or **yearly**. Each [journal](#journal-journal-definition) has exactly one periodicity.
 
 ### Periodic note
-A note created for a specific date and [periodicity](#periodicity). For example, `2026-03-24.md` is a daily periodic note. The filename is derived from the configured [Moment.js format string](https://momentjs.com/docs/#/displaying/format/).
+A note created for a specific date in a specific [journal](#journal-journal-definition). For example, `2026-03-24.md` in the "Personal" journal. The filename is derived from the journal's [Moment.js format string](https://momentjs.com/docs/#/displaying/format/).
 
-### Periodic config
-The settings for a single [periodicity](#periodicity): `enabled`, `folder`, `format`, and `templatePath`. These can be overridden per-person or per-device. See [resolution chain](#resolution-chain).
+### Journal scope
+Determines who can see and use a journal. Three levels:
+
+- **Global** — available to everyone in the vault (no identity system needed)
+- **Person** — only visible to the person registered on this device
+- **Group** — visible to all members of a group note
+
+See [scopes](/obsidian-daily-notes-ng/features/periodic-notes/#scopes).
+
+### Journal picker
+A fuzzy search modal that appears when multiple [journals](#journal-journal-definition) share the same [periodicity](#periodicity). For example, if you have three daily journals, "Open today's daily note" shows a picker to choose which one.
 
 ## Identity system
 
 ### Device ID
-A UUID v4 generated once per Obsidian installation and stored in `localStorage` (never synced). It uniquely identifies *this device* so the plugin knows who is using the vault. See [multi-user identity](/obsidian-daily-notes-ng/features/identity/).
+A UUID v4 generated once per Obsidian installation and stored in `localStorage` (never synced). Uniquely identifies *this device* so the plugin knows who is using the vault. See [multi-user identity](/obsidian-daily-notes-ng/features/identity/).
 
 ### Person note
-A markdown note with `type: person` in its frontmatter. Represents a human user of the vault. Person notes can contain per-person [periodic config](#periodic-config) overrides in a `periodic` frontmatter block.
+A markdown note with `type: person` in its frontmatter. Represents a human user of the vault. Person notes can contain per-person [journal](#journal-journal-definition) overrides.
 
 ```yaml
 ---
@@ -46,74 +58,65 @@ members:
 ```
 
 ### Device-to-user mapping
-A record linking a [device ID](#device-id) to a [person note](#person-note) path. Stored in plugin settings (synced across devices). Created when you "register" a device in the identity settings.
+A record linking a [device ID](#device-id) to a [person note](#person-note) path. Stored in plugin settings (synced). Created when you "register" a device in identity settings.
 
-### Resolution chain
-The priority order used to determine effective settings for a given periodicity. Higher layers override lower layers. Only non-undefined fields from a layer override the layer below.
-
-```
-1. Device preferences   (localStorage, highest priority)
-2. Person frontmatter   (periodic block in person note)
-3. Settings overrides   (personPeriodicOverrides array)
-4. Vault-wide config    (settings.periodic[periodicity])
-```
-
-See [resolution chain details](/obsidian-daily-notes-ng/features/identity/#resolution-chain).
+### Journal resolver
+The component that filters the vault's [journal](#journal-journal-definition) list to show only those available to the current device/user. Global journals are always available. Person/group journals are filtered by ownership.
 
 ### Person interpolation
-The `{{person}}` placeholder in folder paths, resolved at runtime to the current user's display name. For example, `Journal/{{person}}/Daily` becomes `Journal/Alice Smith/Daily` on Alice's device.
+The `{{person}}` placeholder in folder paths, resolved at runtime to the current user's display name. For example, `Journal/{{person}}/Daily` becomes `Journal/Alice Smith/Daily`.
 
 ### Creator attribution
 Automatic insertion of a frontmatter field (default: `creator`) linking to the current user's [person note](#person-note) when a new periodic note is created.
 
 ### Note UUID
-A stable UUID v4 stored in a note's frontmatter (default property: `dnngId`). Survives file renames and moves. Used for reliable cross-references.
+A stable UUID v4 stored in a note's frontmatter (default property: `dnngId`). Survives file renames and moves.
 
 ## Template system
 
 ### Template context
-The set of variables available for substitution in templates. Built-in variables: `{{title}}`, `{{date}}`, `{{time}}`, `{{person}}`.
+The set of variables available for substitution in templates. Built-in: `{{title}}`, `{{date}}`, `{{time}}`, `{{person}}`.
 
 ### Templater bridge
-The integration layer that detects the [Templater plugin](https://github.com/SilentVoid13/Templater) and delegates template processing to it. When Templater is installed, you can use `<% %>` syntax in periodic note templates.
+The integration layer that detects [Templater](https://github.com/SilentVoid13/Templater) and delegates template processing when its "Trigger on new file creation" setting is enabled. Falls back to the built-in engine otherwise.
 
 ## Folder notes
 
 ### Folder note
-A note that represents a folder. When you click the folder in the file explorer, it opens the note instead of expanding the tree. Requires the [Folder Notes plugin](https://github.com/LostPaul/obsidian-folder-notes). In Daily Notes NG, each periodic note can optionally be a folder note (see [folder-note mode](#folder-note-mode)).
+A note that represents a folder. Clicking the folder in the file explorer opens the note. Requires [Folder Notes plugin](https://github.com/LostPaul/obsidian-folder-notes).
 
 ### Folder-note mode
-A setting that changes how periodic notes are stored on disk. When enabled, each note becomes a folder containing the note file, allowing attachments to nest under it.
+A setting that changes how periodic notes are stored. When on, each note becomes a folder for attachment nesting:
 
-- **Off**: `Journal/Daily/2026-03-24.md` (flat file)
-- **On**: `Journal/Daily/2026-03-24/2026-03-24.md` (folder note — attachments go alongside)
+- **Off**: `Journal/Daily/2026-03-24.md`
+- **On**: `Journal/Daily/2026-03-24/2026-03-24.md`
 
 See [folder notes guide](/obsidian-daily-notes-ng/guides/folder-notes/).
 
-### Periodic index (`.base` MOC)
-A `.base` file auto-generated at the root of each periodic notes folder. Acts as a dashboard showing all notes in that folder with date, word count, and tag columns. Recognized as the folder note for that directory by the Folder Notes plugin. Uses `file.inFolder(this.file.folder)` for portability.
+### Periodic index (.base MOC)
+A `.base` file auto-generated at the root of each journal folder. Acts as a dashboard. Uses `file.inFolder(this.file.folder)` for portability.
 
 ### Fallback path resolution
-The safety mechanism that checks both flat and folder-note paths when looking for existing notes. Ensures notes created in one mode are always found after toggling to the other mode. No migration needed when switching.
+Checks both flat and folder-note paths when looking for notes. Ensures notes created in one mode are found after toggling.
 
 ## Companion plugins
 
 ### Folder Notes plugin
-[LostPaul's Folder Notes](https://github.com/LostPaul/obsidian-folder-notes) — provides the click-to-open-folder-note behavior in the file explorer. Supports `.base` files as folder notes since v1.8.17. Keep **Auto create OFF** when using with Daily Notes NG. See [integration guide](/obsidian-daily-notes-ng/guides/folder-notes/).
+[LostPaul's Folder Notes](https://github.com/LostPaul/obsidian-folder-notes) — click-to-open folder notes. Supports `.base` files since v1.8.17. Keep **Auto create OFF** with Daily Notes NG. See [guide](/obsidian-daily-notes-ng/guides/folder-notes/).
 
 ### Templater
-[SilentVoid13's Templater](https://github.com/SilentVoid13/Templater) — advanced template engine with `<% %>` syntax. Daily Notes NG's [Templater bridge](#templater-bridge) detects it and delegates template processing when **Trigger on new file creation** is enabled. When that setting is off, Daily Notes NG uses its built-in engine.
+[SilentVoid13's Templater](https://github.com/SilentVoid13/Templater) — advanced `<% %>` template syntax. Daily Notes NG delegates to it when "Trigger on new file creation" is on.
 
 ### Dataview
-[Blacksmithgu's Dataview](https://github.com/blacksmithgu/obsidian-dataview) — query language for Obsidian notes. Sees all periodic notes regardless of flat vs folder-note storage. Use `dv.pages('"Journal/Daily"')` to query daily notes.
+[Blacksmithgu's Dataview](https://github.com/blacksmithgu/obsidian-dataview) — query language for notes. Sees all periodic notes regardless of storage mode.
 
 ## Testing
 
 ### Test vault
-The `dnng-test-vault/` directory inside the project. Contains the plugin build output and sample data. Opened in Obsidian for manual and CLI-based testing.
+The `dnng-test-vault/` directory. Contains plugin build output and sample data for testing.
 
 ### Test fixtures plugin
-A separate companion plugin (`daily-notes-ng-test-fixtures`) that generates and cleans up sample data in the test vault via Obsidian commands. See [test fixtures](/obsidian-daily-notes-ng/development/test-fixtures/).
+Separate companion plugin (`daily-notes-ng-test-fixtures`) that generates and cleans up test data via commands. See [test fixtures](/obsidian-daily-notes-ng/development/test-fixtures/).
 
 ### Obsidian CLI
-The official Obsidian command-line interface (v1.12+). Used for automated testing: reloading plugins, executing commands, inspecting state, and taking screenshots without leaving the terminal. See [testing workflow](/obsidian-daily-notes-ng/development/testing/).
+Official Obsidian CLI (v1.12+). Used for automated testing: reloading plugins, executing commands, inspecting state, taking screenshots. See [testing workflow](/obsidian-daily-notes-ng/development/testing/).

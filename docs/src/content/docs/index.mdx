@@ -3,7 +3,7 @@ title: Daily Notes NG
 description: Next-generation daily notes plugin for Obsidian
 template: splash
 hero:
-  tagline: All your daily journaling tools in one plugin. Periodic notes, calendar, templates, todo rollover, multi-user identity, and more.
+  tagline: Multiple journals, multi-user identity, and all your daily note tools in one plugin.
   actions:
     - text: Get started
       link: /obsidian-daily-notes-ng/getting-started/installation/
@@ -16,42 +16,58 @@ hero:
 
 ## Why Daily Notes NG?
 
-The Obsidian daily notes ecosystem has a **maintenance crisis**. [Periodic Notes](https://github.com/liamcain/obsidian-periodic-notes) and [Calendar](https://github.com/liamcain/obsidian-calendar-plugin) have been abandoned for ~4 years with 151+ open issues. Users are forced to combine 5+ plugins for a complete daily notes workflow.
+The Obsidian daily notes ecosystem has a **maintenance crisis**. [Periodic Notes](https://github.com/liamcain/obsidian-periodic-notes) and [Calendar](https://github.com/liamcain/obsidian-calendar-plugin) have been abandoned for ~4 years with 151+ open issues. Users are forced to combine 5+ plugins for a complete workflow.
 
-Daily Notes NG consolidates the best of **Periodic Notes**, **Calendar**, **Rollover Daily Todos**, **Update Frontmatter Modified Date**, **Natural Language Dates**, and the **Journal plugin** into one actively maintained solution — plus a **multi-user identity system** for shared vaults that no other daily notes plugin offers.
+Daily Notes NG consolidates the best features into one plugin — and adds a **named journals** system and **multi-user identity** that no other daily notes plugin offers.
 
-## Features at a glance
+## Core concept: named journals
 
-- **[Periodic notes](/obsidian-daily-notes-ng/features/periodic-notes/)** — Daily, weekly, monthly, quarterly, and yearly notes with independent folder/format/template configs
-- **[Calendar sidebar](/obsidian-daily-notes-ng/features/calendar/)** — Month-view calendar with dot indicators for existing notes
-- **[Template integration](/obsidian-daily-notes-ng/features/templates/)** — Built-in variable resolution with seamless Templater bridge
-- **[Todo rollover](/obsidian-daily-notes-ng/features/todo-rollover/)** — Carry incomplete checkboxes from yesterday's note
-- **[Frontmatter dates](/obsidian-daily-notes-ng/features/frontmatter-dates/)** — Auto-populate created and modified dates with smart debouncing
-- **[Natural language dates](/obsidian-daily-notes-ng/features/natural-language-dates/)** — Type `@next friday` to insert date links inline
-- **[Multi-user identity](/obsidian-daily-notes-ng/features/identity/)** — Per-person folders, creator attribution, device registration, group notes
-
-## Architecture overview
+Unlike other periodic notes plugins that give you one folder per periodicity, Daily Notes NG lets you define **multiple named journals** — each with its own folder, template, periodicity, and ownership scope:
 
 ```
-┌─────────────────────────────────────────────────┐
-│                  Daily Notes NG                  │
-├──────────┬──────────┬──────────┬────────────────┤
-│ Periodic │ Calendar │ Template │  Navigation    │
-│  Notes   │ Sidebar  │  Engine  │  Commands      │
-├──────────┴──────────┴──────────┴────────────────┤
-│            Identity System (optional)            │
-│  ┌──────────┐  ┌──────────┐  ┌───────────────┐  │
-│  │  Device   │  │  Person  │  │    Config     │  │
-│  │  Manager  │→ │  Registry│→ │   Resolver    │  │
-│  └──────────┘  └──────────┘  └───────────────┘  │
-├─────────────────────────────────────────────────┤
-│  Todo Rollover │ Frontmatter │ NLP Dates       │
-│                │   Tracker   │ (chrono-node)   │
-└─────────────────────────────────────────────────┘
+Your journals:
+├── Personal        → Journal/Alice/Daily     (daily, person-scoped)
+├── Work standup    → Teams/Dev/Standup       (daily, group-scoped)
+├── Research log    → Research/Weekly          (weekly, person-scoped)
+├── HQ bulletin     → HQ/Bulletin             (daily, global)
+└── Team retro      → Teams/Dev/Retro         (weekly, group-scoped)
+```
+
+**Global journals** are available to everyone. **Person journals** only appear on registered devices. **Group journals** show for all group members. See [journals](/obsidian-daily-notes-ng/features/periodic-notes/).
+
+## Features
+
+- **[Named journals](/obsidian-daily-notes-ng/features/periodic-notes/)** — Multiple journals per vault with independent folder/template/periodicity configs
+- **[Multi-user identity](/obsidian-daily-notes-ng/features/identity/)** — Device registration, person/group notes, creator attribution, per-person routing
+- **[Calendar sidebar](/obsidian-daily-notes-ng/features/calendar/)** — Month-view calendar with dot indicators
+- **[Folder-note mode](/obsidian-daily-notes-ng/guides/folder-notes/)** — Store notes as folders for attachment nesting, auto-generated .base MOC indexes
+- **[Template integration](/obsidian-daily-notes-ng/features/templates/)** — Built-in variables + seamless Templater bridge
+- **[Todo rollover](/obsidian-daily-notes-ng/features/todo-rollover/)** — Carry incomplete checkboxes from yesterday
+- **[Frontmatter dates](/obsidian-daily-notes-ng/features/frontmatter-dates/)** — Auto-populate created/modified with smart debouncing
+- **[Natural language dates](/obsidian-daily-notes-ng/features/natural-language-dates/)** — Type `@next friday` to insert date links inline
+
+## Architecture
+
+```
+┌──────────────────────────────────────────────────────┐
+│                  Daily Notes NG                       │
+├──────────────────────────────────────────────────────┤
+│  Journals: [Personal, Work standup, HQ bulletin, ...]│
+│  Each with: folder, template, periodicity, scope     │
+├──────────────┬───────────────┬───────────────────────┤
+│  Journal     │  Calendar     │  Navigation           │
+│  Resolver    │  Sidebar      │  Commands + Picker    │
+├──────────────┴───────────────┴───────────────────────┤
+│            Identity System (optional)                 │
+│  Device ID → Person Note → Scope filtering           │
+│  Group resolution → Creator attribution              │
+├──────────────────────────────────────────────────────┤
+│  Templates │ Todo Rollover │ Frontmatter │ NLP Dates │
+└──────────────────────────────────────────────────────┘
 ```
 
 ## For developers
 
-Daily Notes NG is built with **Bun**, **TypeScript**, and **esbuild**. It includes a full [development guide](/obsidian-daily-notes-ng/development/setup/), [agentic testing workflows](/obsidian-daily-notes-ng/development/testing/), and a separate [test fixtures plugin](/obsidian-daily-notes-ng/development/test-fixtures/) for rapid iteration.
+Built with **Bun**, **TypeScript**, and **esbuild**. Includes [Obsidian CLI testing](/obsidian-daily-notes-ng/development/testing/), a [test fixtures plugin](/obsidian-daily-notes-ng/development/test-fixtures/), and [BRAT-compatible releases](/obsidian-daily-notes-ng/development/setup/).
 
-See the [concepts glossary](/obsidian-daily-notes-ng/concepts/glossary/) for terminology used throughout these docs.
+See the [glossary](/obsidian-daily-notes-ng/concepts/glossary/) for terminology.

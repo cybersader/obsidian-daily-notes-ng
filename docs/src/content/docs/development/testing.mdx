@@ -37,7 +37,7 @@ bun test --watch   # Watch mode
 Tests live in `tests/` mirroring the `src/` structure. The Obsidian API is mocked via `tests/preload.ts` (Bun plugin that provides a mock `obsidian` module).
 
 ### What to unit test
-- [PeriodicConfigResolver](/obsidian-daily-notes-ng/development/architecture/#data-flow-creating-a-periodic-note) resolution chain logic
+- [JournalResolver](/obsidian-daily-notes-ng/development/architecture/#journal-resolution-flow) scope filtering and journal availability
 - [DevicePreferences](/obsidian-daily-notes-ng/concepts/glossary/#device-id) localStorage read/write
 - Frontmatter parsing utilities
 - Todo parser (checkbox extraction)
