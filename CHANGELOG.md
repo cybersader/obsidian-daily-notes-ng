@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.1] - 2026-03-25
+
+### Added
+- BRAT-compatible release workflow (auto-detect version, CHANGELOG parsing, auto-tag)
+- Version bump scripts: `bun run release:patch/minor/major`
+- Folder notes integration guide in docs
+- Expanded glossary with folder-note and companion plugin terms
+
+### Fixed
+- Templater bridge: correctly falls back to built-in engine when trigger_on_file_creation is off
+- .base MOC generation triggers when opening existing notes too
+
 ## [0.1.0] - 2026-03-24
 
 ### Added
