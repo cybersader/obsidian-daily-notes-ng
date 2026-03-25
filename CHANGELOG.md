@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2] - 2026-03-25
+
+### Added
+- Autocomplete for all path/folder fields in settings (person notes, templates, folders)
+- FileSuggest and FolderSuggest using Obsidian's AbstractInputSuggest API
+- Person note search filters to configured discovery folder
+
 ## [0.1.1] - 2026-03-25
 
 ### Added
