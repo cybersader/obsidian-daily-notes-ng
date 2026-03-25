@@ -1,12 +1,10 @@
-import type { Periodicity } from '../periodic/periodicity';
-import type { PeriodicConfig, DevicePreferencesData } from '../settings/types';
+import type { JournalDefinition, DevicePreferencesData } from '../settings/types';
 
 const STORAGE_KEY = 'daily-notes-ng-device-prefs';
 
 /**
  * Per-device settings stored in localStorage (NOT synced).
  * These override vault-wide and per-person settings.
- * Follows TaskNotes DevicePreferences pattern.
  */
 export class DevicePreferences {
   private cache: DevicePreferencesData | null = null;
@@ -35,13 +33,13 @@ export class DevicePreferences {
     this.cache = null;
   }
 
-  getPeriodicOverride(periodicity: Periodicity): Partial<PeriodicConfig> | undefined {
-    return this.get().periodicOverrides?.[periodicity];
+  getJournalOverride(journalId: string): Partial<JournalDefinition> | undefined {
+    return this.get().journalOverrides?.[journalId];
   }
 
-  setPeriodicOverride(periodicity: Periodicity, override: Partial<PeriodicConfig>): void {
+  setJournalOverride(journalId: string, override: Partial<JournalDefinition>): void {
     const current = this.get();
-    const overrides = { ...current.periodicOverrides, [periodicity]: override };
-    this.set({ periodicOverrides: overrides });
+    const overrides = { ...current.journalOverrides, [journalId]: override };
+    this.set({ journalOverrides: overrides });
   }
 }

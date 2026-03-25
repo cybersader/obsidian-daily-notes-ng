@@ -19,10 +19,10 @@ describe('DevicePreferences', () => {
 
   test('set merges with existing data', () => {
     prefs.set({ deviceName: 'Test PC' });
-    prefs.set({ periodicOverrides: { daily: { folder: 'Custom/Daily' } } });
+    prefs.set({ journalOverrides: { 'j1': { folder: 'Custom/Daily' } } });
     const data = prefs.get();
     expect(data.deviceName).toBe('Test PC');
-    expect(data.periodicOverrides?.daily?.folder).toBe('Custom/Daily');
+    expect(data.journalOverrides?.['j1']?.folder).toBe('Custom/Daily');
   });
 
   test('clear removes all data', () => {
@@ -31,13 +31,13 @@ describe('DevicePreferences', () => {
     expect(prefs.get()).toEqual({});
   });
 
-  test('getPeriodicOverride returns undefined when no overrides', () => {
-    expect(prefs.getPeriodicOverride('daily')).toBeUndefined();
+  test('getJournalOverride returns undefined when no overrides', () => {
+    expect(prefs.getJournalOverride('j1')).toBeUndefined();
   });
 
-  test('setPeriodicOverride stores and retrieves override', () => {
-    prefs.setPeriodicOverride('daily', { folder: 'My/Daily' });
-    expect(prefs.getPeriodicOverride('daily')).toEqual({ folder: 'My/Daily' });
+  test('setJournalOverride stores and retrieves override', () => {
+    prefs.setJournalOverride('j1', { folder: 'My/Daily' });
+    expect(prefs.getJournalOverride('j1')).toEqual({ folder: 'My/Daily' });
   });
 
   test('handles corrupted localStorage gracefully', () => {

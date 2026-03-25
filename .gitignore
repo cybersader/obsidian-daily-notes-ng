@@ -30,10 +30,22 @@ npm-debug.log*
 .env
 .env.local
 
-# Test vault data
+# Test vault — only track config, not generated data or installed plugins
 dnng-test-vault/.obsidian/workspace.json
 dnng-test-vault/.obsidian/workspace-mobile.json
 dnng-test-vault/.obsidian/cache/
+dnng-test-vault/.obsidian/plugins/*/main.js
+dnng-test-vault/.obsidian/plugins/*/styles.css
+dnng-test-vault/.obsidian/plugins/dataview/
+dnng-test-vault/.obsidian/plugins/folder-notes/
+dnng-test-vault/.obsidian/plugins/templater-obsidian/
+dnng-test-vault/.obsidian/plugins/daily-notes-ng/main.js
+dnng-test-vault/.obsidian/plugins/daily-notes-ng/styles.css
+dnng-test-vault/.obsidian/plugins/daily-notes-ng/data.json
+dnng-test-vault/.obsidian/plugins/daily-notes-ng-test-fixtures/main.js
+dnng-test-vault/Test-Journal/
+dnng-test-vault/Test-Templates/
+dnng-test-vault/Test-People/
 
 # Claude Code
 .claude/settings.local.json

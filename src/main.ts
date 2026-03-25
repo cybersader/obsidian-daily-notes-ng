@@ -1,6 +1,6 @@
 import { Plugin, WorkspaceLeaf } from 'obsidian';
 import type { DailyNotesNGSettings } from './settings/types';
-import { DEFAULT_SETTINGS } from './constants';
+import { DEFAULT_SETTINGS, migratePeriodicToJournals } from './constants';
 import { DailyNotesNGSettingsTab } from './settings/SettingsTab';
 import { PeriodicNoteManager } from './periodic/PeriodicNoteManager';
 import { CalendarView, CALENDAR_VIEW_TYPE } from './calendar/CalendarView';
@@ -14,7 +14,7 @@ import { NoteUuidService } from './identity/NoteUuidService';
 import { PersonNoteService } from './identity/PersonNoteService';
 import { GroupRegistry } from './identity/GroupRegistry';
 import { DevicePreferences } from './identity/DevicePreferences';
-import { PeriodicConfigResolver } from './identity/PeriodicConfigResolver';
+import { JournalResolver } from './identity/JournalResolver';
 import { TemplateEngine } from './templates/TemplateEngine';
 import { TemplaterBridge } from './templates/TemplaterBridge';
 import { DebugLog } from './utils/debug';
@@ -31,7 +31,7 @@ export default class DailyNotesNGPlugin extends Plugin {
   personNoteService!: PersonNoteService;
   groupRegistry!: GroupRegistry;
   devicePreferences!: DevicePreferences;
-  configResolver!: PeriodicConfigResolver;
+  journalResolver!: JournalResolver;
   templateEngine!: TemplateEngine;
   templaterBridge!: TemplaterBridge;
   debug!: DebugLog;
@@ -47,18 +47,20 @@ export default class DailyNotesNGPlugin extends Plugin {
     this.personNoteService = new PersonNoteService(this.app, this.settings);
     this.groupRegistry = new GroupRegistry(this.app, this.settings);
     this.devicePreferences = new DevicePreferences();
-    this.configResolver = new PeriodicConfigResolver(
+
+    // Journal resolver (replaces PeriodicConfigResolver)
+    this.journalResolver = new JournalResolver(
       this.app, this.settings, this.userRegistry,
-      this.personNoteService, this.devicePreferences
+      this.personNoteService, this.groupRegistry
     );
 
     // Initialize template system
     this.templateEngine = new TemplateEngine(this.app, this.settings);
     this.templaterBridge = new TemplaterBridge(this.app);
 
-    // Initialize core managers (now with identity-aware resolver)
+    // Initialize core managers
     this.periodicManager = new PeriodicNoteManager(
-      this.app, this.settings, this.configResolver,
+      this.app, this.settings, this.journalResolver,
       this.userRegistry, this.noteUuidService,
       this.templateEngine, this.templaterBridge, this.debug
     );
@@ -106,12 +108,13 @@ export default class DailyNotesNGPlugin extends Plugin {
       await this.saveSettings();
     }
 
-    await this.debug.log('Daily Notes NG loaded', { version: this.manifest.version });
+    await this.debug.log('Daily Notes NG loaded', {
+      version: this.manifest.version,
+      journals: this.settings.journals.length,
+    });
   }
 
-  async onunload(): Promise<void> {
-    // Cleanup handled by Obsidian's plugin lifecycle
-  }
+  async onunload(): Promise<void> {}
 
   async activateCalendarView(): Promise<void> {
     const existing = this.app.workspace.getLeavesOfType(CALENDAR_VIEW_TYPE);
@@ -127,7 +130,23 @@ export default class DailyNotesNGPlugin extends Plugin {
   }
 
   async loadSettings(): Promise<void> {
-    this.settings = deepMerge(DEFAULT_SETTINGS, (await this.loadData()) as Partial<DailyNotesNGSettings>);
+    const saved = (await this.loadData()) as any;
+    let settings = deepMerge(DEFAULT_SETTINGS, saved as Partial<DailyNotesNGSettings>);
+
+    // Migration: convert old periodic format to journals
+    if (saved?.periodic && !saved?.journals) {
+      const migrated = migratePeriodicToJournals(
+        saved.periodic,
+        saved.personPeriodicOverrides ?? saved?.identity?.personPeriodicOverrides
+      );
+      settings.journals = migrated;
+      delete (settings as any).periodic;
+      delete (settings as any).personPeriodicOverrides;
+      await this.saveData(settings);
+      console.log('Daily Notes NG: Migrated periodic settings to journals format');
+    }
+
+    this.settings = settings;
   }
 
   async saveSettings(): Promise<void> {

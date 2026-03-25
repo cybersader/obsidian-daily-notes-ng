@@ -1,1 +1,7 @@
-["daily-notes-ng", "daily-notes-ng-test-fixtures"]
+[
+  "daily-notes-ng",
+  "daily-notes-ng-test-fixtures",
+  "folder-notes",
+  "templater-obsidian",
+  "dataview"
+]

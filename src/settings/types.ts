@@ -1,10 +1,32 @@
 import type { Periodicity } from '../periodic/periodicity';
 
+/** @deprecated Use JournalDefinition instead. Kept for migration. */
 export interface PeriodicConfig {
   enabled: boolean;
   folder: string;
   format: string;
   templatePath: string;
+}
+
+export type JournalScope = 'global' | 'person' | 'group';
+
+/**
+ * A named journal definition. Each journal has its own folder, template,
+ * periodicity, and ownership scope. This replaces the old fixed
+ * per-periodicity PeriodicConfig system.
+ */
+export interface JournalDefinition {
+  id: string;
+  name: string;
+  periodicity: Periodicity;
+  folder: string;
+  format: string;
+  templatePath: string;
+  scope: JournalScope;
+  ownerPath?: string;
+  icon?: string;
+  color?: string;
+  enabled: boolean;
 }
 
 export interface DeviceUserMapping {
@@ -15,6 +37,7 @@ export interface DeviceUserMapping {
   userDisplayName?: string;
 }
 
+/** @deprecated Use JournalDefinition with scope='person' instead. Kept for migration. */
 export interface PersonPeriodicOverride {
   personNotePath: string;
   personDisplayName: string;
@@ -30,11 +53,11 @@ export interface IdentityTypeConfig {
 
 export interface DevicePreferencesData {
   deviceName?: string;
-  periodicOverrides?: Partial<Record<Periodicity, Partial<PeriodicConfig>>>;
+  journalOverrides?: Record<string, Partial<JournalDefinition>>;
 }
 
 export interface DailyNotesNGSettings {
-  periodic: Record<Periodicity, PeriodicConfig>;
+  journals: JournalDefinition[];
   calendar: {
     openOnStartup: boolean;
     showWeekNumbers: boolean;
@@ -80,10 +103,14 @@ export interface DailyNotesNGSettings {
     creatorFieldName: string;
     noteUuidProperty: string;
     noteUuidAutoGenerate: boolean;
-    personPeriodicOverrides: PersonPeriodicOverride[];
     typeConfig: IdentityTypeConfig;
     personNotesFolder: string;
     groupNotesFolder: string;
   };
   debug: boolean;
+
+  /** @deprecated Old format — migrated to journals[] on first load */
+  periodic?: Record<Periodicity, PeriodicConfig>;
+  /** @deprecated Old format — migrated to journals[] on first load */
+  personPeriodicOverrides?: PersonPeriodicOverride[];
 }

@@ -2,6 +2,7 @@ import { App, PluginSettingTab, Setting, AbstractInputSuggest, TFile } from 'obs
 import type DailyNotesNGPlugin from '../main';
 import { ALL_PERIODICITIES, PERIODICITY_LABELS } from '../periodic/periodicity';
 import type { Periodicity } from '../periodic/periodicity';
+import type { JournalDefinition, JournalScope } from './types';
 
 /**
  * File path suggester that shows matching vault files as you type.
@@ -87,7 +88,7 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    this.renderPeriodicSection(containerEl);
+    this.renderJournalsSection(containerEl);
     this.renderFolderNotesSection(containerEl);
     this.renderCalendarSection(containerEl);
     this.renderIdentitySection(containerEl);
@@ -97,60 +98,148 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
     this.renderDebugSection(containerEl);
   }
 
-  private renderPeriodicSection(containerEl: HTMLElement): void {
-    new Setting(containerEl).setName('Periodic notes').setHeading();
+  private renderJournalsSection(containerEl: HTMLElement): void {
+    new Setting(containerEl).setName('Journals').setHeading();
 
-    for (const periodicity of ALL_PERIODICITIES) {
-      const label = PERIODICITY_LABELS[periodicity];
-      const config = this.plugin.settings.periodic[periodicity];
+    new Setting(containerEl)
+      .setDesc('Define multiple journals with different folders, templates, and ownership scopes.')
+      .addButton((btn) =>
+        btn.setButtonText('Add journal').onClick(async () => {
+          const id = crypto.randomUUID?.() ?? Date.now().toString(36);
+          this.plugin.settings.journals.push({
+            id,
+            name: 'New journal',
+            periodicity: 'daily',
+            folder: 'Journal/New',
+            format: 'YYYY-MM-DD',
+            templatePath: '',
+            scope: 'global',
+            enabled: true,
+          });
+          await this.plugin.saveSettings();
+          this.display();
+        })
+      );
 
+    for (const journal of this.plugin.settings.journals) {
+      this.renderJournalCard(containerEl, journal);
+    }
+  }
+
+  private renderJournalCard(containerEl: HTMLElement, journal: JournalDefinition): void {
+    // Journal name + enable/remove
+    new Setting(containerEl)
+      .setName(journal.name)
+      .setDesc(`${journal.periodicity} | ${journal.scope}${journal.ownerPath ? ` | ${journal.ownerPath}` : ''}`)
+      .addToggle((toggle) =>
+        toggle.setValue(journal.enabled).onChange(async (value) => {
+          journal.enabled = value;
+          await this.plugin.saveSettings();
+        })
+      )
+      .addButton((btn) =>
+        btn.setButtonText('Remove').setWarning().onClick(async () => {
+          this.plugin.settings.journals = this.plugin.settings.journals.filter(j => j.id !== journal.id);
+          await this.plugin.saveSettings();
+          this.display();
+        })
+      );
+
+    if (!journal.enabled) return;
+
+    // Name
+    new Setting(containerEl)
+      .setName('Name')
+      .addText((text) =>
+        text.setValue(journal.name).onChange(async (value) => {
+          journal.name = value;
+          await this.plugin.saveSettings();
+        })
+      );
+
+    // Periodicity
+    new Setting(containerEl)
+      .setName('Periodicity')
+      .addDropdown((dd) => {
+        for (const p of ALL_PERIODICITIES) {
+          dd.addOption(p, PERIODICITY_LABELS[p]);
+        }
+        dd.setValue(journal.periodicity).onChange(async (value) => {
+          journal.periodicity = value as Periodicity;
+          await this.plugin.saveSettings();
+        });
+      });
+
+    // Folder (with autocomplete)
+    new Setting(containerEl)
+      .setName('Folder')
+      .setDesc('Use {{person}} for per-person subfolders')
+      .addText((text) => {
+        text.setValue(journal.folder).onChange(async (value) => {
+          journal.folder = value;
+          await this.plugin.saveSettings();
+        });
+        new FolderSuggest(this.app, text.inputEl);
+      });
+
+    // Format
+    new Setting(containerEl)
+      .setName('Date format')
+      .setDesc('Moment.js format for filenames')
+      .addText((text) =>
+        text.setValue(journal.format).onChange(async (value) => {
+          journal.format = value;
+          await this.plugin.saveSettings();
+        })
+      );
+
+    // Template (with autocomplete)
+    new Setting(containerEl)
+      .setName('Template')
+      .addText((text) => {
+        text.setValue(journal.templatePath).onChange(async (value) => {
+          journal.templatePath = value;
+          await this.plugin.saveSettings();
+        });
+        new FileSuggest(this.app, text.inputEl, this.plugin, (file) => {
+          journal.templatePath = file.path;
+          text.setValue(file.path);
+          this.plugin.saveSettings();
+        });
+      });
+
+    // Scope
+    new Setting(containerEl)
+      .setName('Scope')
+      .setDesc('Who can see and use this journal')
+      .addDropdown((dd) => {
+        dd.addOption('global', 'Global (everyone)');
+        dd.addOption('person', 'Person (one user)');
+        dd.addOption('group', 'Group (team members)');
+        dd.setValue(journal.scope).onChange(async (value) => {
+          journal.scope = value as JournalScope;
+          if (value === 'global') journal.ownerPath = undefined;
+          await this.plugin.saveSettings();
+          this.display();
+        });
+      });
+
+    // Owner (person or group note) — only for non-global
+    if (journal.scope !== 'global') {
       new Setting(containerEl)
-        .setName(`Enable ${label.toLowerCase()} notes`)
-        .addToggle((toggle) =>
-          toggle.setValue(config.enabled).onChange(async (value) => {
-            config.enabled = value;
+        .setName('Owner')
+        .setDesc(`Path to ${journal.scope} note`)
+        .addText((text) => {
+          text.setValue(journal.ownerPath ?? '').onChange(async (value) => {
+            journal.ownerPath = value || undefined;
             await this.plugin.saveSettings();
-            this.display();
-          })
-        );
-
-      if (config.enabled) {
-        new Setting(containerEl)
-          .setName(`${label} folder`)
-          .setDesc(`Folder for ${label.toLowerCase()} notes. Use {{person}} for per-person folders.`)
-          .addText((text) => {
-            text.setValue(config.folder).onChange(async (value) => {
-              config.folder = value;
-              await this.plugin.saveSettings();
-            });
-            new FolderSuggest(this.app, text.inputEl);
           });
-
-        new Setting(containerEl)
-          .setName(`${label} format`)
-          .setDesc('Moment.js date format for filenames')
-          .addText((text) =>
-            text.setValue(config.format).onChange(async (value) => {
-              config.format = value;
-              await this.plugin.saveSettings();
-            })
-          );
-
-        new Setting(containerEl)
-          .setName(`${label} template`)
-          .setDesc('Path to template file')
-          .addText((text) => {
-            text.setValue(config.templatePath).onChange(async (value) => {
-              config.templatePath = value;
-              await this.plugin.saveSettings();
-            });
-            new FileSuggest(this.app, text.inputEl, this.plugin, (file) => {
-              config.templatePath = file.path;
-              text.setValue(file.path);
-              this.plugin.saveSettings();
-            });
+          new FileSuggest(this.app, text.inputEl, this.plugin, (file) => {
+            journal.ownerPath = file.path;
+            text.setValue(file.path);
+            this.plugin.saveSettings();
           });
-      }
+        });
     }
   }
 
