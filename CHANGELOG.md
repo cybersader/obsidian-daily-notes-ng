@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.3] - 2026-03-25
+
+### Added
+- Named journals: multiple journal definitions per vault, each with own folder/template/periodicity
+- Journal scopes: global (everyone), person (one user), group (team members)
+- Journal picker modal when multiple journals match a periodicity
+- Auto-migration from old periodic settings to journals format
+
+### Changed
+- Settings UI: journals section replaces old per-periodicity toggles
+- PeriodicNoteManager now journal-aware (accepts JournalDefinition)
+- Navigation commands detect current journal from active file
+
 ## [0.1.2] - 2026-03-25
 
 ### Added
