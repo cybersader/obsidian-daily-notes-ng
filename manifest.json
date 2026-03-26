@@ -1,7 +1,7 @@
 {
 	"id": "daily-notes-ng",
 	"name": "Daily Notes NG",
-	"version": "0.1.9",
+	"version": "0.1.10",
 	"minAppVersion": "1.4.0",
 	"description": "Next-generation daily notes: periodic notes (daily/weekly/monthly/quarterly/yearly), calendar sidebar, template integration, todo rollover, frontmatter date tracking, and natural language dates — all in one plugin.",
 	"author": "cybersader",

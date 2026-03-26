@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.10] - 2026-03-26
+
+### Added
+- Per-journal setting overrides: folder-note mode, base MOC, Templater, date tracking, date keys, creator, UUID
+- Collapsible "Overrides" section in each journal card
+- Tri-state dropdowns: "Use global" / "On" / "Off" for boolean overrides
+- String overrides with placeholder showing global default
+
 ## [0.1.9] - 2026-03-26
 
 ### Changed
