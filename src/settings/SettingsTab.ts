@@ -167,7 +167,7 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
     new Setting(containerEl).setName('Journals').setHeading();
 
     new Setting(containerEl)
-      .setDesc('Each journal is a named destination for periodic notes with its own folder, template, and scope.')
+      .setDesc('Each journal is a named destination for periodic notes with its own folder, template, and scope. See docs for details.')
       .addButton((btn) =>
         btn.setButtonText('Add journal').onClick(async () => {
           const id = crypto.randomUUID?.() ?? Date.now().toString(36);
@@ -237,6 +237,7 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
     // Name
     new Setting(content)
       .setName('Name')
+      .setDesc('Display name shown in the journal picker and settings')
       .addText((text) =>
         text.setValue(journal.name).onChange(async (value) => {
           journal.name = value;
@@ -247,6 +248,7 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
     // Periodicity
     new Setting(content)
       .setName('Periodicity')
+      .setDesc('How often this journal creates notes: daily, weekly, monthly, quarterly, or yearly')
       .addDropdown((dd) => {
         for (const p of ALL_PERIODICITIES) {
           dd.addOption(p, PERIODICITY_LABELS[p]);
@@ -260,7 +262,7 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
     // Folder (with autocomplete)
     new Setting(content)
       .setName('Folder')
-      .setDesc('Use {{person}} for per-person subfolders')
+      .setDesc('Where notes are created. Use {{person}} to auto-insert the registered user\'s name as a subfolder.')
       .addText((text) => {
         text.setValue(journal.folder).onChange(async (value) => {
           journal.folder = value;
@@ -273,7 +275,7 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
     // Format
     new Setting(content)
       .setName('Date format')
-      .setDesc('Moment.js format for filenames')
+      .setDesc('Format for filenames. Examples: YYYY-MM-DD (daily), gggg-[W]WW (weekly), YYYY-MM (monthly).')
       .addText((text) =>
         text.setValue(journal.format).onChange(async (value) => {
           journal.format = value;
@@ -285,6 +287,7 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
     // Template (with autocomplete)
     new Setting(content)
       .setName('Template')
+      .setDesc('Applied when creating new notes. Supports {{title}}, {{date}}, {{time}}, {{person}} variables. Works with Templater if installed.')
       .addText((text) => {
         text.setValue(journal.templatePath).onChange(async (value) => {
           journal.templatePath = value;
@@ -317,7 +320,7 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
     if (journal.scope !== 'global') {
       new Setting(content)
         .setName('Owner')
-        .setDesc(`Path to ${journal.scope} note`)
+        .setDesc(`The ${journal.scope} note that owns this journal. Only devices registered to this ${journal.scope === 'person' ? 'person' : 'group\'s members'} will see it.`)
         .addText((text) => {
           text.setValue(journal.ownerPath ?? '').onChange(async (value) => {
             journal.ownerPath = value || undefined;
@@ -507,6 +510,7 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Open on startup')
+      .setDesc('Automatically show the calendar sidebar when Obsidian starts')
       .addToggle((toggle) =>
         toggle.setValue(this.plugin.settings.calendar.openOnStartup).onChange(async (value) => {
           this.plugin.settings.calendar.openOnStartup = value;
@@ -516,6 +520,7 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Show week numbers')
+      .setDesc('Display ISO week numbers along the left edge of the calendar')
       .addToggle((toggle) =>
         toggle.setValue(this.plugin.settings.calendar.showWeekNumbers).onChange(async (value) => {
           this.plugin.settings.calendar.showWeekNumbers = value;
@@ -637,6 +642,7 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Creator field name')
+      .setDesc('The frontmatter property name used to store the creator link (e.g., "creator", "author")')
       .addText((text) =>
         text.setValue(this.plugin.settings.identity.creatorFieldName).onChange(async (value) => {
           this.plugin.settings.identity.creatorFieldName = value;
@@ -659,6 +665,7 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Auto-generate UUIDs')
+      .setDesc('Automatically assign a unique ID to each new periodic note. Survives renames and moves.')
       .addToggle((toggle) =>
         toggle.setValue(this.plugin.settings.identity.noteUuidAutoGenerate).onChange(async (value) => {
           this.plugin.settings.identity.noteUuidAutoGenerate = value;
@@ -671,7 +678,7 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Person notes folder')
-      .setDesc('Folder to scan for person notes (empty for entire vault)')
+      .setDesc('Limit person note discovery to this folder. Leave empty to scan the entire vault.')
       .addText((text) => {
         text.setValue(this.plugin.settings.identity.personNotesFolder).onChange(async (value) => {
           this.plugin.settings.identity.personNotesFolder = value;
@@ -682,7 +689,7 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Group notes folder')
-      .setDesc('Folder to scan for group notes (empty for entire vault)')
+      .setDesc('Limit group note discovery to this folder. Leave empty to scan the entire vault.')
       .addText((text) => {
         text.setValue(this.plugin.settings.identity.groupNotesFolder).onChange(async (value) => {
           this.plugin.settings.identity.groupNotesFolder = value;
@@ -708,6 +715,7 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Person type value')
+      .setDesc('The value that identifies a note as a person (e.g., "person", "team-member")')
       .addText((text) =>
         text.setValue(tc.personTypeValue).onChange(async (value) => {
           tc.personTypeValue = value;
@@ -717,6 +725,7 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Group type value')
+      .setDesc('The value that identifies a note as a group (e.g., "group", "team")')
       .addText((text) =>
         text.setValue(tc.groupTypeValue).onChange(async (value) => {
           tc.groupTypeValue = value;
@@ -726,6 +735,7 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Members property')
+      .setDesc('Frontmatter key containing the list of group members as wikilinks')
       .addText((text) =>
         text.setValue(tc.membersPropertyName).onChange(async (value) => {
           tc.membersPropertyName = value;
@@ -778,6 +788,7 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
     if (this.plugin.settings.nlp.enabled) {
       new Setting(containerEl)
         .setName('Trigger character')
+        .setDesc('Type this character followed by a date phrase (e.g., @tomorrow, @next friday) to get suggestions')
         .addText((text) =>
           text.setValue(this.plugin.settings.nlp.triggerChar).onChange(async (value) => {
             this.plugin.settings.nlp.triggerChar = value;
