@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5] - 2026-03-26
+
+### Fixed
+- Folder autocomplete: clicking suggestions now works (FolderSuggest inputEl fix)
+- File tree preview: added "File preview" label heading
+- Remove journal button: eliminated excessive padding/margin gap
+
 ## [0.1.4] - 2026-03-26
 
 ### Added
