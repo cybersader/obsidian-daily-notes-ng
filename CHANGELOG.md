@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.8] - 2026-03-26
+
+### Fixed
+- Empty notes when no template configured (now gets a # heading)
+- UUID added to all new notes regardless of identity being enabled
+- processFrontMatter no longer gated behind identity.enabled
+
 ## [0.1.7] - 2026-03-26
 
 ### Fixed
