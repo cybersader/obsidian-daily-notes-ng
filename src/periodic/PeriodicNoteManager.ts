@@ -71,11 +71,6 @@ export class PeriodicNoteManager {
       }
     }
 
-    // If no template produced content, create a minimal note
-    if (!content.trim()) {
-      content = `# ${filename}\n`;
-    }
-
     // Create the file
     const newFile = await this.app.vault.create(path, content);
 
