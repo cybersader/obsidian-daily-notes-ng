@@ -202,7 +202,12 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
 
     const badges = header.createDiv('dnng-journal-card-badges');
     badges.createSpan({ text: journal.periodicity, cls: 'dnng-journal-card-badge' });
-    const scopeBadge = badges.createSpan({ text: journal.scope, cls: 'dnng-journal-card-badge' });
+    let scopeText = journal.scope as string;
+    if (journal.scope !== 'global' && journal.ownerPath) {
+      const ownerName = journal.ownerPath.replace(/\.md$/, '').split('/').pop() ?? '';
+      scopeText = `${journal.scope}: ${ownerName}`;
+    }
+    const scopeBadge = badges.createSpan({ text: scopeText, cls: 'dnng-journal-card-badge' });
     if (!journal.enabled) scopeBadge.addClass('dnng-journal-card-badge--disabled');
 
     // Enable toggle in header
