@@ -1,6 +1,6 @@
 {
   "name": "obsidian-daily-notes-ng",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "Next-generation daily notes plugin for Obsidian: periodic notes, calendar, templates, todo rollover, frontmatter dates, natural language dates.",
   "main": "main.js",
   "scripts": {

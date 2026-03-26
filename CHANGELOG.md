@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.12] - 2026-03-26
+
+### Improved
+- All settings now have clear descriptions explaining purpose and usage
+- Template field: lists available variables and Templater support
+- Date format: shows examples for daily/weekly/monthly
+- Folder: explains person interpolation
+- NLP trigger: shows usage example
+
 ## [0.1.11] - 2026-03-26
 
 ### Improved
