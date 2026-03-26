@@ -71,27 +71,30 @@ export class PeriodicNoteManager {
       }
     }
 
+    // If no template produced content, create a minimal note
+    if (!content.trim()) {
+      content = `# ${filename}\n`;
+    }
+
     // Create the file
     const newFile = await this.app.vault.create(path, content);
 
-    // Add creator and UUID via processFrontMatter (Obsidian-native, correct property types)
-    if (this.settings.identity.enabled) {
-      await this.app.fileManager.processFrontMatter(newFile, (fm) => {
-        // Creator attribution — stored as a list with a wikilink
-        if (this.settings.identity.autoSetCreator) {
-          const creatorValue = this.userRegistry.getCreatorValue();
-          if (creatorValue) {
-            fm[this.settings.identity.creatorFieldName] = [creatorValue];
-          }
+    // Add frontmatter via processFrontMatter (Obsidian-native, correct property types)
+    await this.app.fileManager.processFrontMatter(newFile, (fm) => {
+      // Creator attribution (requires identity enabled + autoSetCreator)
+      if (this.settings.identity.enabled && this.settings.identity.autoSetCreator) {
+        const creatorValue = this.userRegistry.getCreatorValue();
+        if (creatorValue) {
+          fm[this.settings.identity.creatorFieldName] = [creatorValue];
         }
-        // Note UUID
-        if (this.settings.identity.noteUuidAutoGenerate && this.settings.identity.noteUuidProperty) {
-          if (!fm[this.settings.identity.noteUuidProperty]) {
-            fm[this.settings.identity.noteUuidProperty] = this.noteUuidService.generateUuid();
-          }
+      }
+      // Note UUID (works regardless of identity being enabled)
+      if (this.settings.identity.noteUuidAutoGenerate && this.settings.identity.noteUuidProperty) {
+        if (!fm[this.settings.identity.noteUuidProperty]) {
+          fm[this.settings.identity.noteUuidProperty] = this.noteUuidService.generateUuid();
         }
-      });
-    }
+      }
+    });
 
     // Let Templater process the file after creation
     if (journal.templatePath && this.templaterBridge.isAvailable()) {
