@@ -164,8 +164,23 @@
   line-height: 1.6;
 }
 
+.dnng-journal-card-preview-label {
+  font-size: var(--font-ui-smaller);
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .dnng-journal-card-preview-info {
   margin-top: 6px;
   font-size: var(--font-ui-smaller);
   color: var(--text-faint);
+}
+
+.dnng-journal-card-remove {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
 }

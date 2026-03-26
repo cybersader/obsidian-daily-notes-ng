@@ -12,6 +12,15 @@ import type { JournalDefinition, JournalScope } from './types';
  * Folder path suggester for folder settings.
  */
 class FolderSuggest extends AbstractInputSuggest<string> {
+  private inputEl: HTMLInputElement;
+  private onSelectFolder: ((folder: string) => void) | null;
+
+  constructor(app: App, inputEl: HTMLInputElement, onSelect?: (folder: string) => void) {
+    super(app, inputEl);
+    this.inputEl = inputEl;
+    this.onSelectFolder = onSelect ?? null;
+  }
+
   getSuggestions(query: string): string[] {
     const lowerQuery = query.toLowerCase();
     const folders = new Set<string>();
@@ -29,8 +38,9 @@ class FolderSuggest extends AbstractInputSuggest<string> {
   }
 
   selectSuggestion(folder: string): void {
-    (this as any).inputEl.value = folder;
-    (this as any).inputEl.dispatchEvent(new Event('input'));
+    this.inputEl.value = folder;
+    this.inputEl.dispatchEvent(new Event('input'));
+    if (this.onSelectFolder) this.onSelectFolder(folder);
     this.close();
   }
 }
@@ -266,18 +276,26 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
     this.updateFileTreePreview(previewEl, journal);
 
     // ── Remove button ────────────────────────────
-    new Setting(content)
-      .addButton((btn) =>
-        btn.setButtonText('Remove journal').setWarning().onClick(async () => {
-          this.plugin.settings.journals = this.plugin.settings.journals.filter(j => j.id !== journal.id);
-          await this.plugin.saveSettings();
-          this.display();
-        })
-      );
+    const removeRow = content.createDiv('dnng-journal-card-remove');
+    const removeBtn = removeRow.createEl('button', {
+      text: 'Remove journal',
+      cls: 'mod-warning',
+    });
+    removeBtn.addEventListener('click', async () => {
+      this.plugin.settings.journals = this.plugin.settings.journals.filter(j => j.id !== journal.id);
+      await this.plugin.saveSettings();
+      this.display();
+    });
   }
 
   private updateFileTreePreview(previewEl: HTMLElement, journal: JournalDefinition): void {
     previewEl.empty();
+
+    // Label
+    previewEl.createDiv({
+      text: 'File preview',
+      cls: 'dnng-journal-card-preview-label',
+    });
 
     const folder = this.plugin.journalResolver.resolveFolder(journal);
     const folderNoteMode = this.plugin.settings.folderNotes.enabled;
