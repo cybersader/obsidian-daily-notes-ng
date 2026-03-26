@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.11] - 2026-03-26
+
+### Improved
+- Journal scope badge now shows owner name (e.g., "person: Alice Smith" instead of just "person")
+
 ## [0.1.10] - 2026-03-26
 
 ### Added
