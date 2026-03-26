@@ -27,6 +27,18 @@ export interface JournalDefinition {
   icon?: string;
   color?: string;
   enabled: boolean;
+
+  // Per-journal overrides (undefined = use global setting)
+  folderNoteMode?: boolean;
+  autoGenerateBaseMoc?: boolean;
+  useTemplater?: boolean;
+  trackDates?: boolean;
+  dateCreatedKey?: string;
+  dateModifiedKey?: string;
+  autoSetCreator?: boolean;
+  creatorFieldName?: string;
+  autoGenerateUuid?: boolean;
+  uuidProperty?: string;
 }
 
 export interface DeviceUserMapping {

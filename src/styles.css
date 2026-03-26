@@ -179,6 +179,44 @@
   color: var(--text-faint);
 }
 
+.dnng-journal-card-overrides {
+  margin-top: 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.dnng-journal-card-overrides-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  background: var(--background-secondary);
+  font-size: var(--font-ui-small);
+}
+
+.dnng-journal-card-overrides-header:hover {
+  background: var(--background-modifier-hover);
+}
+
+.dnng-journal-card-overrides-label {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.dnng-journal-card-overrides-content {
+  padding: 4px 8px 8px;
+}
+
+.dnng-journal-card-overrides.dnng-journal-card--collapsed .dnng-journal-card-overrides-content {
+  display: none;
+}
+
+.dnng-journal-card-overrides.dnng-journal-card--collapsed .dnng-journal-card-chevron {
+  transform: rotate(-90deg);
+}
+
 .dnng-journal-card-remove {
   margin-top: 8px;
   display: flex;

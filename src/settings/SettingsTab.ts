@@ -326,6 +326,11 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
         });
     }
 
+    // ── Per-journal overrides (collapsible) ─────
+    this.renderJournalOverrides(content, journal, () => {
+      this.updateFileTreePreview(previewEl, journal);
+    });
+
     // ── File tree preview ────────────────────────
     const previewEl = content.createDiv('dnng-journal-card-preview');
     this.updateFileTreePreview(previewEl, journal);
@@ -343,6 +348,83 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
     });
   }
 
+  private renderJournalOverrides(
+    containerEl: HTMLElement,
+    journal: JournalDefinition,
+    onUpdate: () => void
+  ): void {
+    // Collapsible section
+    const section = containerEl.createDiv('dnng-journal-card-overrides');
+    const header = section.createDiv('dnng-journal-card-overrides-header');
+    const chevron = header.createSpan({ cls: 'dnng-journal-card-chevron', text: '\u25BC' });
+    header.createSpan({ text: 'Overrides', cls: 'dnng-journal-card-overrides-label' });
+
+    const overridesContent = section.createDiv('dnng-journal-card-overrides-content');
+    let overridesCollapsed = true;
+
+    const updateOverridesCollapse = () => {
+      section.toggleClass('dnng-journal-card--collapsed', overridesCollapsed);
+    };
+    header.addEventListener('click', () => {
+      overridesCollapsed = !overridesCollapsed;
+      updateOverridesCollapse();
+    });
+    updateOverridesCollapse();
+
+    // Helper: boolean tri-state dropdown (undefined / true / false)
+    const addBoolOverride = (name: string, field: keyof JournalDefinition, globalValue: boolean) => {
+      const currentValue = journal[field] as boolean | undefined;
+      const globalLabel = globalValue ? 'on' : 'off';
+
+      new Setting(overridesContent)
+        .setName(name)
+        .setDesc(`Global: ${globalLabel}`)
+        .addDropdown((dd) => {
+          dd.addOption('global', `Use global (${globalLabel})`);
+          dd.addOption('true', 'On');
+          dd.addOption('false', 'Off');
+
+          dd.setValue(currentValue === undefined ? 'global' : String(currentValue));
+          dd.onChange(async (value) => {
+            if (value === 'global') {
+              (journal as any)[field] = undefined;
+            } else {
+              (journal as any)[field] = value === 'true';
+            }
+            await this.plugin.saveSettings();
+            onUpdate();
+          });
+        });
+    };
+
+    // Helper: string override (empty = use global)
+    const addStringOverride = (name: string, field: keyof JournalDefinition, globalValue: string) => {
+      new Setting(overridesContent)
+        .setName(name)
+        .setDesc(`Global: ${globalValue || '(empty)'}`)
+        .addText((text) => {
+          text
+            .setPlaceholder(`Use global: ${globalValue}`)
+            .setValue((journal[field] as string) ?? '')
+            .onChange(async (value) => {
+              (journal as any)[field] = value || undefined;
+              await this.plugin.saveSettings();
+            });
+        });
+    };
+
+    addBoolOverride('Folder-note mode', 'folderNoteMode', this.plugin.settings.folderNotes.enabled);
+    addBoolOverride('Auto base MOC', 'autoGenerateBaseMoc', this.plugin.settings.folderNotes.autoGenerateBaseMoc);
+    addBoolOverride('Use Templater', 'useTemplater', this.plugin.settings.templates.useTemplater);
+    addBoolOverride('Track dates', 'trackDates', this.plugin.settings.frontmatter.trackDates);
+    addStringOverride('Date created key', 'dateCreatedKey', this.plugin.settings.frontmatter.createdKey);
+    addStringOverride('Date modified key', 'dateModifiedKey', this.plugin.settings.frontmatter.modifiedKey);
+    addBoolOverride('Auto-set creator', 'autoSetCreator', this.plugin.settings.identity.autoSetCreator);
+    addStringOverride('Creator field name', 'creatorFieldName', this.plugin.settings.identity.creatorFieldName);
+    addBoolOverride('Auto-generate UUID', 'autoGenerateUuid', this.plugin.settings.identity.noteUuidAutoGenerate);
+    addStringOverride('UUID property', 'uuidProperty', this.plugin.settings.identity.noteUuidProperty);
+  }
+
   private updateFileTreePreview(previewEl: HTMLElement, journal: JournalDefinition): void {
     previewEl.empty();
 
@@ -353,8 +435,8 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
     });
 
     const folder = this.plugin.journalResolver.resolveFolder(journal);
-    const folderNoteMode = this.plugin.settings.folderNotes.enabled;
-    const baseMoc = this.plugin.settings.folderNotes.autoGenerateBaseMoc;
+    const folderNoteMode = journal.folderNoteMode ?? this.plugin.settings.folderNotes.enabled;
+    const baseMoc = journal.autoGenerateBaseMoc ?? this.plugin.settings.folderNotes.autoGenerateBaseMoc;
     const today = (window as any).moment();
     const yesterday = (window as any).moment().subtract(1, 'day');
     const todayName = today.format(journal.format);

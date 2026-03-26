@@ -9,9 +9,14 @@ import { buildTemplateContext } from '../templates/templateVariables';
 import { DEFAULT_BASE_MOC_TEMPLATE } from '../constants';
 import type { DebugLog } from '../utils/debug';
 
+/** Resolve per-journal override vs global setting. */
+function resolve<T>(journalValue: T | undefined, globalValue: T): T {
+  return journalValue !== undefined ? journalValue : globalValue;
+}
+
 /**
  * Core manager for creating, opening, and navigating periodic notes.
- * Now journal-aware: each operation targets a specific JournalDefinition.
+ * All behavior settings are resolved per-journal: journal override ?? global default.
  */
 export class PeriodicNoteManager {
   constructor(
@@ -25,20 +30,18 @@ export class PeriodicNoteManager {
     private debug: DebugLog
   ) {}
 
-  /**
-   * Open or create a periodic note for the given date and journal.
-   */
   async openPeriodicNote(date: moment.Moment, journal: JournalDefinition): Promise<TFile | null> {
     if (!journal.enabled) return null;
 
     const folder = this.journalResolver.resolveFolder(journal);
     const filename = date.format(journal.format);
-    const path = this.resolveNotePath(folder, filename);
+    const useFolderNotes = resolve(journal.folderNoteMode, this.settings.folderNotes.enabled);
+    const path = this.resolveNotePath(folder, filename, useFolderNotes);
 
     await this.debug.log('openPeriodicNote', { path, journal: journal.name, date: date.format() });
 
     // Check if note already exists (checks both flat and folder-note paths)
-    const existing = this.findExistingNote(folder, filename);
+    const existing = this.findExistingNote(folder, filename, useFolderNotes);
     if (existing) {
       await this.ensureBaseMoc(folder, journal);
       await this.openFile(existing);
@@ -50,7 +53,7 @@ export class PeriodicNoteManager {
     await this.ensureBaseMoc(folder, journal);
 
     // In folder-note mode, also create the note's subfolder
-    if (this.settings.folderNotes.enabled) {
+    if (useFolderNotes) {
       await this.ensureFolderExists(normalizePath(`${folder}/${filename}`));
     }
 
@@ -60,8 +63,9 @@ export class PeriodicNoteManager {
     if (journal.templatePath) {
       const personName = this.journalResolver.getCurrentPersonName();
       const context = buildTemplateContext(filename, date, personName ?? undefined);
+      const useTemplater = resolve(journal.useTemplater, this.settings.templates.useTemplater);
 
-      if (this.templaterBridge.isAvailable()) {
+      if (useTemplater && this.templaterBridge.isAvailable()) {
         const templateFile = this.app.vault.getAbstractFileByPath(journal.templatePath);
         if (templateFile instanceof TFile) {
           content = await this.app.vault.read(templateFile);
@@ -74,25 +78,32 @@ export class PeriodicNoteManager {
     // Create the file
     const newFile = await this.app.vault.create(path, content);
 
-    // Add frontmatter via processFrontMatter (Obsidian-native, correct property types)
-    await this.app.fileManager.processFrontMatter(newFile, (fm) => {
-      // Creator attribution (requires identity enabled + autoSetCreator)
-      if (this.settings.identity.enabled && this.settings.identity.autoSetCreator) {
-        const creatorValue = this.userRegistry.getCreatorValue();
-        if (creatorValue) {
-          fm[this.settings.identity.creatorFieldName] = [creatorValue];
+    // Add frontmatter via processFrontMatter
+    const autoCreator = resolve(journal.autoSetCreator, this.settings.identity.autoSetCreator);
+    const creatorField = resolve(journal.creatorFieldName, this.settings.identity.creatorFieldName);
+    const autoUuid = resolve(journal.autoGenerateUuid, this.settings.identity.noteUuidAutoGenerate);
+    const uuidProp = resolve(journal.uuidProperty, this.settings.identity.noteUuidProperty);
+
+    const needsFrontmatter = (this.settings.identity.enabled && autoCreator) || (autoUuid && uuidProp);
+    if (needsFrontmatter) {
+      await this.app.fileManager.processFrontMatter(newFile, (fm) => {
+        if (this.settings.identity.enabled && autoCreator) {
+          const creatorValue = this.userRegistry.getCreatorValue();
+          if (creatorValue) {
+            fm[creatorField] = [creatorValue];
+          }
         }
-      }
-      // Note UUID (works regardless of identity being enabled)
-      if (this.settings.identity.noteUuidAutoGenerate && this.settings.identity.noteUuidProperty) {
-        if (!fm[this.settings.identity.noteUuidProperty]) {
-          fm[this.settings.identity.noteUuidProperty] = this.noteUuidService.generateUuid();
+        if (autoUuid && uuidProp) {
+          if (!fm[uuidProp]) {
+            fm[uuidProp] = this.noteUuidService.generateUuid();
+          }
         }
-      }
-    });
+      });
+    }
 
     // Let Templater process the file after creation
-    if (journal.templatePath && this.templaterBridge.isAvailable()) {
+    const useTemplater = resolve(journal.useTemplater, this.settings.templates.useTemplater);
+    if (journal.templatePath && useTemplater && this.templaterBridge.isAvailable()) {
       await this.templaterBridge.processFile(newFile);
     }
 
@@ -100,19 +111,14 @@ export class PeriodicNoteManager {
     return newFile;
   }
 
-  /**
-   * Check if a periodic note exists for the given date and journal.
-   */
   getExistingNote(date: moment.Moment, journal: JournalDefinition): TFile | null {
     if (!journal.enabled) return null;
     const folder = this.journalResolver.resolveFolder(journal);
     const filename = date.format(journal.format);
-    return this.findExistingNote(folder, filename);
+    const useFolderNotes = resolve(journal.folderNoteMode, this.settings.folderNotes.enabled);
+    return this.findExistingNote(folder, filename, useFolderNotes);
   }
 
-  /**
-   * Get all existing notes for a given journal.
-   */
   getAllNotes(journal: JournalDefinition): TFile[] {
     if (!journal.enabled) return [];
 
@@ -120,9 +126,10 @@ export class PeriodicNoteManager {
     const folderObj = this.app.vault.getAbstractFileByPath(folder);
     if (!(folderObj instanceof TFolder)) return [];
 
+    const useFolderNotes = resolve(journal.folderNoteMode, this.settings.folderNotes.enabled);
     const notes: TFile[] = [];
 
-    if (this.settings.folderNotes.enabled) {
+    if (useFolderNotes) {
       for (const child of folderObj.children) {
         if (child instanceof TFolder) {
           const noteFile = child.children.find(
@@ -133,7 +140,6 @@ export class PeriodicNoteManager {
       }
     }
 
-    // Also collect flat notes (handles mixed mode / migration)
     for (const child of folderObj.children) {
       if (child instanceof TFile && child.extension === 'md' && !notes.includes(child)) {
         notes.push(child);
@@ -143,19 +149,31 @@ export class PeriodicNoteManager {
     return notes;
   }
 
-  private resolveNotePath(folder: string, filename: string): string {
-    if (this.settings.folderNotes.enabled) {
+  /**
+   * Resolve whether this journal uses folder-note mode.
+   * Exported so settings UI can use it for the file tree preview.
+   */
+  isFolderNoteMode(journal: JournalDefinition): boolean {
+    return resolve(journal.folderNoteMode, this.settings.folderNotes.enabled);
+  }
+
+  isBaseMocEnabled(journal: JournalDefinition): boolean {
+    return resolve(journal.autoGenerateBaseMoc, this.settings.folderNotes.autoGenerateBaseMoc);
+  }
+
+  private resolveNotePath(folder: string, filename: string, useFolderNotes: boolean): string {
+    if (useFolderNotes) {
       return normalizePath(`${folder}/${filename}/${filename}.md`);
     }
     return normalizePath(`${folder}/${filename}.md`);
   }
 
-  private findExistingNote(folder: string, filename: string): TFile | null {
-    const primaryPath = this.resolveNotePath(folder, filename);
+  private findExistingNote(folder: string, filename: string, useFolderNotes: boolean): TFile | null {
+    const primaryPath = this.resolveNotePath(folder, filename, useFolderNotes);
     const primary = this.app.vault.getAbstractFileByPath(primaryPath);
     if (primary instanceof TFile) return primary;
 
-    const fallbackPath = this.settings.folderNotes.enabled
+    const fallbackPath = useFolderNotes
       ? normalizePath(`${folder}/${filename}.md`)
       : normalizePath(`${folder}/${filename}/${filename}.md`);
     const fallback = this.app.vault.getAbstractFileByPath(fallbackPath);
@@ -164,8 +182,9 @@ export class PeriodicNoteManager {
     return null;
   }
 
-  private async ensureBaseMoc(folder: string, _journal: JournalDefinition): Promise<void> {
-    if (!this.settings.folderNotes.autoGenerateBaseMoc) return;
+  private async ensureBaseMoc(folder: string, journal: JournalDefinition): Promise<void> {
+    const autoMoc = resolve(journal.autoGenerateBaseMoc, this.settings.folderNotes.autoGenerateBaseMoc);
+    if (!autoMoc) return;
 
     const folderName = folder.split('/').pop() ?? 'Index';
     const basePath = normalizePath(`${folder}/${folderName}.base`);
@@ -195,17 +214,5 @@ export class PeriodicNoteManager {
   private async openFile(file: TFile): Promise<void> {
     const leaf = this.app.workspace.getLeaf(false);
     await leaf.openFile(file);
-  }
-
-  private addFrontmatterField(content: string, key: string, value: string): string {
-    const fmRegex = /^---\n([\s\S]*?)\n---/;
-    const match = content.match(fmRegex);
-
-    if (match) {
-      const fm = match[1];
-      return content.replace(fmRegex, `---\n${fm}\n${key}: ${value}\n---`);
-    }
-
-    return `---\n${key}: ${value}\n---\n${content}`;
   }
 }
