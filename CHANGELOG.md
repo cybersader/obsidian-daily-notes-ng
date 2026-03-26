@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.7] - 2026-03-26
+
+### Fixed
+- Creator property now renders as clickable link in Obsidian Properties view
+- Creator stored as YAML list via processFrontMatter (not raw string injection)
+- Plugin registers creator property type as 'multitext' on load
+- UUID also set via processFrontMatter (single atomic operation)
+
 ## [0.1.6] - 2026-03-26
 
 ### Fixed
