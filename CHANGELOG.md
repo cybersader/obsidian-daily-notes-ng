@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.6] - 2026-03-26
+
+### Fixed
+- Folder autocomplete: hierarchical path navigation instead of substring matching
+- Typing "/" after a folder browses its children
+- Backspacing to a folder name shows that folder again
+- No more deep nested paths appearing for partial queries
+
 ## [0.1.5] - 2026-03-26
 
 ### Fixed
