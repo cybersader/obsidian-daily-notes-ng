@@ -102,6 +102,16 @@ export default class DailyNotesNGPlugin extends Plugin {
       });
     }
 
+    // Register property types so Obsidian renders them correctly
+    if (this.settings.identity.enabled) {
+      const typeManager = (this.app as any).metadataTypeManager;
+      if (typeManager?.setType) {
+        if (this.settings.identity.autoSetCreator) {
+          typeManager.setType(this.settings.identity.creatorFieldName, 'multitext');
+        }
+      }
+    }
+
     // Update device lastSeen if identity is enabled
     if (this.settings.identity.enabled && this.userRegistry.getCurrentUser()) {
       this.userRegistry.updateLastSeen();

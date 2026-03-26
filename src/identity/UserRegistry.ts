@@ -53,7 +53,8 @@ export class UserRegistry {
   }
 
   /**
-   * Get creator value for new notes (wikilink to person note).
+   * Get creator value for new notes.
+   * Returns the wikilink format that Obsidian stores in frontmatter.
    */
   getCreatorValue(): string | null {
     if (!this.settings.identity.autoSetCreator) return null;
@@ -61,6 +62,16 @@ export class UserRegistry {
     if (!userPath) return null;
     const basename = userPath.replace(/\.md$/, '').split('/').pop();
     return `[[${basename}]]`;
+  }
+
+  /**
+   * Get creator display name (without wikilink brackets).
+   */
+  getCreatorDisplayName(): string | null {
+    if (!this.settings.identity.autoSetCreator) return null;
+    const userPath = this.getCurrentUser();
+    if (!userPath) return null;
+    return userPath.replace(/\.md$/, '').split('/').pop() ?? null;
   }
 
   /**

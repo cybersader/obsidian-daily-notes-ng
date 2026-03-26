@@ -71,24 +71,26 @@ export class PeriodicNoteManager {
       }
     }
 
-    // Add creator attribution to frontmatter
-    if (this.settings.identity.enabled && this.settings.identity.autoSetCreator) {
-      const creatorValue = this.userRegistry.getCreatorValue();
-      if (creatorValue) {
-        content = this.addFrontmatterField(
-          content,
-          this.settings.identity.creatorFieldName,
-          creatorValue
-        );
-      }
-    }
-
     // Create the file
     const newFile = await this.app.vault.create(path, content);
 
-    // Add note UUID if configured
-    if (this.settings.identity.enabled && this.settings.identity.noteUuidAutoGenerate) {
-      await this.noteUuidService.getOrCreateUuid(newFile);
+    // Add creator and UUID via processFrontMatter (Obsidian-native, correct property types)
+    if (this.settings.identity.enabled) {
+      await this.app.fileManager.processFrontMatter(newFile, (fm) => {
+        // Creator attribution — stored as a list with a wikilink
+        if (this.settings.identity.autoSetCreator) {
+          const creatorValue = this.userRegistry.getCreatorValue();
+          if (creatorValue) {
+            fm[this.settings.identity.creatorFieldName] = [creatorValue];
+          }
+        }
+        // Note UUID
+        if (this.settings.identity.noteUuidAutoGenerate && this.settings.identity.noteUuidProperty) {
+          if (!fm[this.settings.identity.noteUuidProperty]) {
+            fm[this.settings.identity.noteUuidProperty] = this.noteUuidService.generateUuid();
+          }
+        }
+      });
     }
 
     // Let Templater process the file after creation
