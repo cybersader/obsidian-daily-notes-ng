@@ -81,3 +81,91 @@
 .dnng-breadcrumb-separator {
   color: var(--text-faint);
 }
+
+/* ── Journal settings cards ────────────────────── */
+
+.dnng-journal-card {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.dnng-journal-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  background: var(--background-secondary);
+  user-select: none;
+}
+
+.dnng-journal-card-header:hover {
+  background: var(--background-modifier-hover);
+}
+
+.dnng-journal-card-chevron {
+  font-size: 10px;
+  width: 16px;
+  text-align: center;
+  color: var(--text-muted);
+  transition: transform 120ms ease;
+}
+
+.dnng-journal-card-header-name {
+  flex: 1;
+  font-weight: 600;
+}
+
+.dnng-journal-card-badges {
+  display: flex;
+  gap: 4px;
+}
+
+.dnng-journal-card-badge {
+  font-size: var(--font-ui-smaller);
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--background-modifier-border);
+  color: var(--text-muted);
+}
+
+.dnng-journal-card-badge--disabled {
+  opacity: 0.5;
+}
+
+.dnng-journal-card-content {
+  padding: 4px 12px 12px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.dnng-journal-card--collapsed .dnng-journal-card-content {
+  display: none;
+}
+
+.dnng-journal-card--collapsed .dnng-journal-card-chevron {
+  transform: rotate(-90deg);
+}
+
+.dnng-journal-card-preview {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+}
+
+.dnng-journal-card-preview pre {
+  margin: 0;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+  white-space: pre;
+  line-height: 1.6;
+}
+
+.dnng-journal-card-preview-info {
+  margin-top: 6px;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+}

@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, AbstractInputSuggest, TFile } from 'obsidian';
+import { App, PluginSettingTab, Setting, AbstractInputSuggest, TFile, ToggleComponent } from 'obsidian';
 import type DailyNotesNGPlugin from '../main';
 import { ALL_PERIODICITIES, PERIODICITY_LABELS } from '../periodic/periodicity';
 import type { Periodicity } from '../periodic/periodicity';
@@ -102,7 +102,7 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
     new Setting(containerEl).setName('Journals').setHeading();
 
     new Setting(containerEl)
-      .setDesc('Define multiple journals with different folders, templates, and ownership scopes.')
+      .setDesc('Each journal is a named destination for periodic notes with its own folder, template, and scope.')
       .addButton((btn) =>
         btn.setButtonText('Add journal').onClick(async () => {
           const id = crypto.randomUUID?.() ?? Date.now().toString(36);
@@ -127,28 +127,45 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
   }
 
   private renderJournalCard(containerEl: HTMLElement, journal: JournalDefinition): void {
-    // Journal name + enable/remove
-    new Setting(containerEl)
-      .setName(journal.name)
-      .setDesc(`${journal.periodicity} | ${journal.scope}${journal.ownerPath ? ` | ${journal.ownerPath}` : ''}`)
-      .addToggle((toggle) =>
-        toggle.setValue(journal.enabled).onChange(async (value) => {
-          journal.enabled = value;
-          await this.plugin.saveSettings();
-        })
-      )
-      .addButton((btn) =>
-        btn.setButtonText('Remove').setWarning().onClick(async () => {
-          this.plugin.settings.journals = this.plugin.settings.journals.filter(j => j.id !== journal.id);
-          await this.plugin.saveSettings();
-          this.display();
-        })
-      );
+    const card = containerEl.createDiv('dnng-journal-card');
+    let collapsed = !journal.enabled;
 
-    if (!journal.enabled) return;
+    // ── Header (always visible) ──────────────────
+    const header = card.createDiv('dnng-journal-card-header');
+    const chevron = header.createSpan({ cls: 'dnng-journal-card-chevron', text: '\u25BC' });
+    header.createSpan({ text: journal.name, cls: 'dnng-journal-card-header-name' });
+
+    const badges = header.createDiv('dnng-journal-card-badges');
+    badges.createSpan({ text: journal.periodicity, cls: 'dnng-journal-card-badge' });
+    const scopeBadge = badges.createSpan({ text: journal.scope, cls: 'dnng-journal-card-badge' });
+    if (!journal.enabled) scopeBadge.addClass('dnng-journal-card-badge--disabled');
+
+    // Enable toggle in header
+    const toggleEl = header.createDiv();
+    const toggle = new ToggleComponent(toggleEl);
+    toggle.setValue(journal.enabled).onChange(async (value) => {
+      journal.enabled = value;
+      await this.plugin.saveSettings();
+      this.display();
+    });
+
+    // ── Content (collapsible) ────────────────────
+    const content = card.createDiv('dnng-journal-card-content');
+
+    const updateCollapse = () => {
+      card.toggleClass('dnng-journal-card--collapsed', collapsed);
+    };
+
+    header.addEventListener('click', (e: MouseEvent) => {
+      // Don't toggle collapse when clicking the enable toggle
+      if (toggleEl.contains(e.target as Node)) return;
+      collapsed = !collapsed;
+      updateCollapse();
+    });
+    updateCollapse();
 
     // Name
-    new Setting(containerEl)
+    new Setting(content)
       .setName('Name')
       .addText((text) =>
         text.setValue(journal.name).onChange(async (value) => {
@@ -158,7 +175,7 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
       );
 
     // Periodicity
-    new Setting(containerEl)
+    new Setting(content)
       .setName('Periodicity')
       .addDropdown((dd) => {
         for (const p of ALL_PERIODICITIES) {
@@ -171,30 +188,32 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
       });
 
     // Folder (with autocomplete)
-    new Setting(containerEl)
+    new Setting(content)
       .setName('Folder')
       .setDesc('Use {{person}} for per-person subfolders')
       .addText((text) => {
         text.setValue(journal.folder).onChange(async (value) => {
           journal.folder = value;
           await this.plugin.saveSettings();
+          this.updateFileTreePreview(previewEl, journal);
         });
         new FolderSuggest(this.app, text.inputEl);
       });
 
     // Format
-    new Setting(containerEl)
+    new Setting(content)
       .setName('Date format')
       .setDesc('Moment.js format for filenames')
       .addText((text) =>
         text.setValue(journal.format).onChange(async (value) => {
           journal.format = value;
           await this.plugin.saveSettings();
+          this.updateFileTreePreview(previewEl, journal);
         })
       );
 
     // Template (with autocomplete)
-    new Setting(containerEl)
+    new Setting(content)
       .setName('Template')
       .addText((text) => {
         text.setValue(journal.templatePath).onChange(async (value) => {
@@ -209,7 +228,7 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
       });
 
     // Scope
-    new Setting(containerEl)
+    new Setting(content)
       .setName('Scope')
       .setDesc('Who can see and use this journal')
       .addDropdown((dd) => {
@@ -226,7 +245,7 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
 
     // Owner (person or group note) — only for non-global
     if (journal.scope !== 'global') {
-      new Setting(containerEl)
+      new Setting(content)
         .setName('Owner')
         .setDesc(`Path to ${journal.scope} note`)
         .addText((text) => {
@@ -241,6 +260,55 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
           });
         });
     }
+
+    // ── File tree preview ────────────────────────
+    const previewEl = content.createDiv('dnng-journal-card-preview');
+    this.updateFileTreePreview(previewEl, journal);
+
+    // ── Remove button ────────────────────────────
+    new Setting(content)
+      .addButton((btn) =>
+        btn.setButtonText('Remove journal').setWarning().onClick(async () => {
+          this.plugin.settings.journals = this.plugin.settings.journals.filter(j => j.id !== journal.id);
+          await this.plugin.saveSettings();
+          this.display();
+        })
+      );
+  }
+
+  private updateFileTreePreview(previewEl: HTMLElement, journal: JournalDefinition): void {
+    previewEl.empty();
+
+    const folder = this.plugin.journalResolver.resolveFolder(journal);
+    const folderNoteMode = this.plugin.settings.folderNotes.enabled;
+    const baseMoc = this.plugin.settings.folderNotes.autoGenerateBaseMoc;
+    const today = (window as any).moment();
+    const yesterday = (window as any).moment().subtract(1, 'day');
+    const todayName = today.format(journal.format);
+    const yesterdayName = yesterday.format(journal.format);
+    const folderName = folder.split('/').pop() ?? 'Index';
+
+    let tree = `${folder}/\n`;
+    if (baseMoc) tree += `\u251C\u2500\u2500 ${folderName}.base\n`;
+
+    if (folderNoteMode) {
+      tree += `\u251C\u2500\u2500 ${todayName}/\n`;
+      tree += `\u2502   \u2514\u2500\u2500 ${todayName}.md\n`;
+      tree += `\u2514\u2500\u2500 ${yesterdayName}/\n`;
+      tree += `    \u2514\u2500\u2500 ${yesterdayName}.md\n`;
+    } else {
+      tree += `\u251C\u2500\u2500 ${todayName}.md\n`;
+      tree += `\u2514\u2500\u2500 ${yesterdayName}.md\n`;
+    }
+
+    previewEl.createEl('pre', { text: tree });
+
+    const info = previewEl.createDiv('dnng-journal-card-preview-info');
+    const parts: string[] = [];
+    if (folderNoteMode) parts.push('folder-note mode');
+    if (baseMoc) parts.push('auto base MOC');
+    if (journal.templatePath) parts.push(`template: ${journal.templatePath}`);
+    info.setText(parts.length > 0 ? parts.join(' \u00B7 ') : 'flat mode');
   }
 
   private renderFolderNotesSection(containerEl: HTMLElement): void {
