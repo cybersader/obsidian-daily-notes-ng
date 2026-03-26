@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4] - 2026-03-26
+
+### Added
+- Collapsible journal cards in settings with header badges and chevron toggle
+- Live file tree preview showing resolved folder path, sample filenames, folder-note structure
+- Preview updates dynamically when changing folder path or date format
+
 ## [0.1.3] - 2026-03-25
 
 ### Added
