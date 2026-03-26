@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.9] - 2026-03-26
+
+### Changed
+- Removed auto-heading on notes without templates (too opinionated)
+
 ## [0.1.8] - 2026-03-26
 
 ### Fixed
