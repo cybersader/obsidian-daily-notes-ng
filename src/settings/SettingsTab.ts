@@ -22,18 +22,73 @@ class FolderSuggest extends AbstractInputSuggest<string> {
   }
 
   getSuggestions(query: string): string[] {
-    const lowerQuery = query.toLowerCase();
-    const folders = new Set<string>();
+    // Collect all unique folder paths in the vault
+    const allFolders = new Set<string>();
     for (const file of this.app.vault.getMarkdownFiles()) {
-      const folder = file.parent?.path;
-      if (folder && folder !== '/' && folder.toLowerCase().includes(lowerQuery)) {
-        folders.add(folder);
+      // Walk up the folder hierarchy to collect all intermediate paths
+      let current = file.parent;
+      while (current && current.path && current.path !== '/') {
+        allFolders.add(current.path);
+        current = current.parent;
       }
     }
-    return [...folders].sort().slice(0, 20);
+
+    const lowerQuery = query.toLowerCase().replace(/\/+$/, '');
+
+    if (!query || query === '/') {
+      // Empty query: show top-level folders
+      return [...allFolders]
+        .filter(f => !f.includes('/'))
+        .sort()
+        .slice(0, 30);
+    }
+
+    // Check if query ends with "/" — user wants to browse children
+    const browsingChildren = query.endsWith('/');
+    const parentPath = browsingChildren ? query.replace(/\/+$/, '') : null;
+
+    if (parentPath) {
+      // Show direct children of the typed path
+      const lowerParent = parentPath.toLowerCase();
+      return [...allFolders]
+        .filter(f => {
+          const lowerF = f.toLowerCase();
+          // Must start with parent path + "/"
+          if (!lowerF.startsWith(lowerParent + '/')) return false;
+          // Must be a direct child (no further slashes after parent)
+          const remainder = f.substring(parentPath.length + 1);
+          return !remainder.includes('/');
+        })
+        .sort()
+        .slice(0, 30);
+    }
+
+    // Otherwise: match folders where the last segment matches the query's last segment
+    // Split query into parent path + partial name
+    const lastSlash = query.lastIndexOf('/');
+    const parentPrefix = lastSlash >= 0 ? query.substring(0, lastSlash).toLowerCase() : '';
+    const partialName = lastSlash >= 0 ? query.substring(lastSlash + 1).toLowerCase() : lowerQuery;
+
+    return [...allFolders]
+      .filter(f => {
+        const lowerF = f.toLowerCase();
+        if (parentPrefix) {
+          // Must be under the parent prefix
+          if (!lowerF.startsWith(parentPrefix + '/')) return false;
+          // And the folder name after parent must start with partial
+          const name = f.substring(parentPrefix.length + 1);
+          return !name.includes('/') && name.toLowerCase().startsWith(partialName);
+        }
+        // No parent prefix — match folder name starting with query
+        const name = f.split('/').pop() ?? '';
+        return name.toLowerCase().startsWith(partialName);
+      })
+      .sort()
+      .slice(0, 30);
   }
 
   renderSuggestion(folder: string, el: HTMLElement): void {
+    // Show full path but bold the matching part
     el.setText(folder);
   }
 
