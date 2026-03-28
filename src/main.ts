@@ -92,9 +92,15 @@ export default class DailyNotesNGPlugin extends Plugin {
     // Settings tab
     this.addSettingTab(new DailyNotesNGSettingsTab(this.app, this));
 
-    // Ribbon icon to open calendar
-    this.addRibbonIcon('calendar', 'Open calendar', () => {
-      this.activateCalendarView();
+    // Ribbon icon — open today's note (primary action)
+    this.addRibbonIcon('calendar-check', 'Daily Notes NG: Open today', () => {
+      const journals = this.journalResolver.getJournalsForPeriodicity('daily');
+      if (journals.length === 1) {
+        this.periodicManager.openPeriodicNote((window as any).moment(), journals[0]);
+      } else if (journals.length > 1) {
+        // Trigger via command which handles the picker
+        (this.app as any).commands.executeCommandById('daily-notes-ng:open-today');
+      }
     });
 
     // Open calendar on startup if configured
