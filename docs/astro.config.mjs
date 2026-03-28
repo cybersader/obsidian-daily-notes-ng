@@ -9,9 +9,10 @@ export default defineConfig({
       title: 'Daily Notes NG',
       description: 'Next-generation daily notes plugin for Obsidian',
       logo: {
-        src: './src/assets/logo.png',
+        src: './src/assets/logo.svg',
         alt: 'Daily Notes NG',
       },
+      customCss: ['./src/styles/brand.css'],
       social: {
         github: 'https://github.com/cybersader/obsidian-daily-notes-ng',
       },

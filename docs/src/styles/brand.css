@@ -1,0 +1,47 @@
+/* Daily Notes NG — Starlight brand overrides */
+
+:root {
+  /* Purple brand palette */
+  --sl-color-accent-low: #2d1854;
+  --sl-color-accent: #7c3aed;
+  --sl-color-accent-high: #c4b5fd;
+
+  --sl-hue-purple: 263;
+}
+
+/* Header logo inherits text color via currentColor SVG */
+.site-title svg {
+  width: 1.5em;
+  height: 1.5em;
+}
+
+/* Hero image — crisp SVG rendering */
+.hero img,
+.hero svg {
+  image-rendering: auto;
+  max-width: 320px;
+}
+
+/* Accent links */
+a {
+  text-decoration-color: var(--sl-color-accent);
+}
+
+/* Sidebar active item */
+[data-current="true"] {
+  border-color: var(--sl-color-accent) !important;
+}
+
+/* Code blocks accent */
+.expressive-code .frame {
+  border-color: var(--sl-color-accent-low);
+}
+
+/* Badge styling in content */
+.badge {
+  background: var(--sl-color-accent-low);
+  color: var(--sl-color-accent-high);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.85em;
+}

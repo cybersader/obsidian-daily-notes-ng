@@ -11,7 +11,8 @@ node_modules/
 coverage/
 .nyc_output/
 
-# Raw source logos (processed versions in assets/logo/)
+# Raw source logos are in assets/logo/sources/ (tracked)
+# Ignore any stray source images in root
 t3-chat-generated-image-*.jpg
 logo-example-*.jpg
 
