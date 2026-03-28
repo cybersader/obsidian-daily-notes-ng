@@ -8,6 +8,10 @@ export default defineConfig({
     starlight({
       title: 'Daily Notes NG',
       description: 'Next-generation daily notes plugin for Obsidian',
+      logo: {
+        src: './src/assets/logo.png',
+        alt: 'Daily Notes NG',
+      },
       social: {
         github: 'https://github.com/cybersader/obsidian-daily-notes-ng',
       },

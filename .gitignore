@@ -11,6 +11,10 @@ node_modules/
 coverage/
 .nyc_output/
 
+# Raw source logos (processed versions in assets/logo/)
+t3-chat-generated-image-*.jpg
+logo-example-*.jpg
+
 # OS files
 .DS_Store
 Thumbs.db
