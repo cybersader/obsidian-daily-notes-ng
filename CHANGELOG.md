@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.14] - 2026-03-28
+
+### Added
+- Notice messages when no journals are available for a command
+- Diagnostic messages explain why: no journals defined, all disabled, identity off, device not registered, or scope mismatch
+- 8-second display time for actionable guidance
+
 ## [0.1.13] - 2026-03-28
 
 ### Added
