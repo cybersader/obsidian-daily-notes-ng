@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo/logo-512.png" alt="Daily Notes NG" width="180">
+  <img src="assets/logo/logo-recraft-crystal.svg" alt="Daily Notes NG" width="200">
 </p>
 
 <h1 align="center">Daily Notes NG</h1>
