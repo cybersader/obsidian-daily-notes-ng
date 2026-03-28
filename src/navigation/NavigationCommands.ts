@@ -1,4 +1,4 @@
-import { FuzzySuggestModal } from 'obsidian';
+import { FuzzySuggestModal, Notice } from 'obsidian';
 import type DailyNotesNGPlugin from '../main';
 import { ALL_PERIODICITIES, PERIODICITY_LABELS, type Periodicity } from '../periodic/periodicity';
 import { navigatePeriod, today } from '../periodic/dateUtils';
@@ -56,7 +56,33 @@ export class NavigationCommands {
     const journals = this.plugin.journalResolver.getJournalsForPeriodicity(periodicity);
 
     if (journals.length === 0) {
-      await this.plugin.debug.warn('NavigationCommands', `No available journals for periodicity: ${periodicity}`);
+      const allJournals = this.plugin.settings.journals;
+      const allForPeriodicity = allJournals.filter(j => j.periodicity === periodicity);
+      const enabledForPeriodicity = allForPeriodicity.filter(j => j.enabled);
+
+      let message: string;
+      if (allForPeriodicity.length === 0) {
+        message = `No ${periodicity} journals defined. Create one in Settings > Journals.`;
+      } else if (enabledForPeriodicity.length === 0) {
+        message = `All ${periodicity} journals are disabled. Enable one in Settings > Journals.`;
+      } else if (!this.plugin.settings.identity.enabled) {
+        message = `No ${periodicity} journals available. Your journals may require the identity system — enable it in Settings > Identity.`;
+      } else if (!this.plugin.userRegistry.getCurrentUser()) {
+        message = `No ${periodicity} journals available for this device. Register this device to a person in Settings > Identity.`;
+      } else {
+        const currentUser = this.plugin.userRegistry.getCurrentUser();
+        const personName = currentUser?.replace(/\.md$/, '').split('/').pop() ?? 'unknown';
+        message = `No ${periodicity} journals available for ${personName} on this device. Check journal scopes in Settings > Journals.`;
+      }
+
+      new Notice(message, 8000);
+      await this.plugin.debug.warn('NavigationCommands', message, {
+        allJournals: allJournals.length,
+        forPeriodicity: allForPeriodicity.length,
+        enabledForPeriodicity: enabledForPeriodicity.length,
+        identityEnabled: this.plugin.settings.identity.enabled,
+        currentUser: this.plugin.userRegistry.getCurrentUser(),
+      });
       return;
     }
 
