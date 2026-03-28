@@ -31,22 +31,37 @@ export class PeriodicNoteManager {
   ) {}
 
   async openPeriodicNote(date: moment.Moment, journal: JournalDefinition): Promise<TFile | null> {
-    if (!journal.enabled) return null;
+    if (!journal.enabled) {
+      await this.debug.warn('PeriodicNoteManager', `Journal "${journal.name}" is disabled, skipping`);
+      return null;
+    }
 
     const folder = this.journalResolver.resolveFolder(journal);
     const filename = date.format(journal.format);
     const useFolderNotes = resolve(journal.folderNoteMode, this.settings.folderNotes.enabled);
     const path = this.resolveNotePath(folder, filename, useFolderNotes);
 
-    await this.debug.log('openPeriodicNote', { path, journal: journal.name, date: date.format() });
+    await this.debug.log('PeriodicNoteManager', 'openPeriodicNote called', {
+      journal: journal.name,
+      scope: journal.scope,
+      ownerPath: journal.ownerPath,
+      date: date.format(),
+      folder,
+      filename,
+      path,
+      useFolderNotes,
+    });
 
     // Check if note already exists (checks both flat and folder-note paths)
     const existing = this.findExistingNote(folder, filename, useFolderNotes);
     if (existing) {
+      await this.debug.log('PeriodicNoteManager', 'Found existing note', { path: existing.path });
       await this.ensureBaseMoc(folder, journal);
       await this.openFile(existing);
       return existing;
     }
+
+    await this.debug.log('PeriodicNoteManager', 'No existing note found, creating new', { path });
 
     // Ensure the periodic folder and .base MOC exist
     await this.ensureFolderExists(folder);
@@ -85,6 +100,14 @@ export class PeriodicNoteManager {
     const uuidProp = resolve(journal.uuidProperty, this.settings.identity.noteUuidProperty);
 
     const needsFrontmatter = (this.settings.identity.enabled && autoCreator) || (autoUuid && uuidProp);
+    await this.debug.log('PeriodicNoteManager', 'Frontmatter resolution', {
+      autoCreator,
+      creatorField,
+      autoUuid,
+      uuidProp,
+      identityEnabled: this.settings.identity.enabled,
+      needsFrontmatter,
+    });
     if (needsFrontmatter) {
       await this.app.fileManager.processFrontMatter(newFile, (fm) => {
         if (this.settings.identity.enabled && autoCreator) {

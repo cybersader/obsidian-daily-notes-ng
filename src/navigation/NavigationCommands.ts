@@ -48,9 +48,17 @@ export class NavigationCommands {
    * If multiple journals match, shows a picker.
    */
   private async openForDate(date: moment.Moment, periodicity: Periodicity): Promise<void> {
+    await this.plugin.debug.log('NavigationCommands', 'openForDate', {
+      date: date.format(),
+      periodicity,
+    });
+
     const journals = this.plugin.journalResolver.getJournalsForPeriodicity(periodicity);
 
-    if (journals.length === 0) return;
+    if (journals.length === 0) {
+      await this.plugin.debug.warn('NavigationCommands', `No available journals for periodicity: ${periodicity}`);
+      return;
+    }
 
     if (journals.length === 1) {
       await this.plugin.periodicManager.openPeriodicNote(date, journals[0]);

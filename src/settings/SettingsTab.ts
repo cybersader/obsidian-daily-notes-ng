@@ -803,11 +803,62 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Enable debug logging')
-      .setDesc('Writes to debug.log in the vault root')
+      .setDesc('Writes detailed logs to debug.log in the vault root and optionally to the browser console (Ctrl+Shift+I)')
       .addToggle((toggle) =>
-        toggle.setValue(this.plugin.settings.debug).onChange(async (value) => {
-          this.plugin.settings.debug = value;
+        toggle.setValue(this.plugin.settings.debug.enabled).onChange(async (value) => {
+          this.plugin.settings.debug.enabled = value;
+          this.plugin.debug.setEnabled(value);
           await this.plugin.saveSettings();
+          this.display();
+        })
+      );
+
+    if (!this.plugin.settings.debug.enabled) return;
+
+    new Setting(containerEl)
+      .setName('Console output')
+      .setDesc('Also log to browser DevTools console (Ctrl+Shift+I)')
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.debug.consoleOutput).onChange(async (value) => {
+          this.plugin.settings.debug.consoleOutput = value;
+          this.plugin.debug.setConsoleOutput(value);
+          await this.plugin.saveSettings();
+        })
+      );
+
+    // Category filters
+    const { LOG_CATEGORY_GROUPS } = require('../utils/debug');
+    for (const [groupName, categories] of Object.entries(LOG_CATEGORY_GROUPS) as [string, string[]][]) {
+      new Setting(containerEl)
+        .setName(groupName)
+        .setDesc((categories as string[]).join(', '))
+        .setHeading();
+
+      for (const cat of categories as string[]) {
+        const isEnabled = this.plugin.settings.debug.categories[cat] !== false;
+        new Setting(containerEl)
+          .setName(cat)
+          .addToggle((toggle) =>
+            toggle.setValue(isEnabled).onChange(async (value) => {
+              if (value) {
+                delete this.plugin.settings.debug.categories[cat];
+              } else {
+                this.plugin.settings.debug.categories[cat] = false;
+              }
+              this.plugin.debug.setCategories(this.plugin.settings.debug.categories);
+              await this.plugin.saveSettings();
+            })
+          );
+      }
+    }
+
+    // Clear log button
+    new Setting(containerEl)
+      .setName('Clear debug log')
+      .setDesc('Clear the contents of debug.log')
+      .addButton((btn) =>
+        btn.setButtonText('Clear').onClick(async () => {
+          await this.plugin.debug.clear();
         })
       );
   }

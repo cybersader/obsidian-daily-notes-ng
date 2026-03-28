@@ -119,7 +119,11 @@ export interface DailyNotesNGSettings {
     personNotesFolder: string;
     groupNotesFolder: string;
   };
-  debug: boolean;
+  debug: {
+    enabled: boolean;
+    consoleOutput: boolean;
+    categories: Record<string, boolean>;
+  };
 
   /** @deprecated Old format — migrated to journals[] on first load */
   periodic?: Record<Periodicity, PeriodicConfig>;

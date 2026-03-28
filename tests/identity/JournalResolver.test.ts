@@ -28,6 +28,12 @@ const mockGroupRegistry = {
   resolveGroupToPersons: jest.fn().mockReturnValue([]),
 } as any;
 
+const mockDebug = {
+  log: jest.fn().mockResolvedValue(undefined),
+  warn: jest.fn().mockResolvedValue(undefined),
+  error: jest.fn().mockResolvedValue(undefined),
+} as any;
+
 function makeSettings(overrides?: Partial<DailyNotesNGSettings>): DailyNotesNGSettings {
   return { ...DEFAULT_SETTINGS, ...overrides };
 }
@@ -40,7 +46,7 @@ describe('JournalResolver', () => {
   test('returns all global journals when identity disabled', () => {
     const settings = makeSettings();
     const resolver = new JournalResolver(
-      mockApp, settings, mockUserRegistry, mockPersonNoteService, mockGroupRegistry
+      mockApp, settings, mockUserRegistry, mockPersonNoteService, mockGroupRegistry, mockDebug
     );
 
     const available = resolver.getAvailableJournals();
@@ -62,7 +68,7 @@ describe('JournalResolver', () => {
     mockUserRegistry.getCurrentUser.mockReturnValue('People/Alice.md');
 
     const resolver = new JournalResolver(
-      mockApp, settings, mockUserRegistry, mockPersonNoteService, mockGroupRegistry
+      mockApp, settings, mockUserRegistry, mockPersonNoteService, mockGroupRegistry, mockDebug
     );
 
     const available = resolver.getAvailableJournals();
@@ -85,7 +91,7 @@ describe('JournalResolver', () => {
     mockGroupRegistry.resolveGroupToPersons.mockReturnValue(['People/Alice.md', 'People/Bob.md']);
 
     const resolver = new JournalResolver(
-      mockApp, settings, mockUserRegistry, mockPersonNoteService, mockGroupRegistry
+      mockApp, settings, mockUserRegistry, mockPersonNoteService, mockGroupRegistry, mockDebug
     );
 
     const available = resolver.getAvailableJournals();
@@ -104,7 +110,7 @@ describe('JournalResolver', () => {
     mockGroupRegistry.resolveGroupToPersons.mockReturnValue(['People/Alice.md', 'People/Bob.md']);
 
     const resolver = new JournalResolver(
-      mockApp, settings, mockUserRegistry, mockPersonNoteService, mockGroupRegistry
+      mockApp, settings, mockUserRegistry, mockPersonNoteService, mockGroupRegistry, mockDebug
     );
 
     const available = resolver.getAvailableJournals();
@@ -121,7 +127,7 @@ describe('JournalResolver', () => {
     });
 
     const resolver = new JournalResolver(
-      mockApp, settings, mockUserRegistry, mockPersonNoteService, mockGroupRegistry
+      mockApp, settings, mockUserRegistry, mockPersonNoteService, mockGroupRegistry, mockDebug
     );
 
     const dailies = resolver.getJournalsForPeriodicity('daily');
@@ -145,7 +151,7 @@ describe('JournalResolver', () => {
     });
 
     const resolver = new JournalResolver(
-      mockApp, settings, mockUserRegistry, mockPersonNoteService, mockGroupRegistry
+      mockApp, settings, mockUserRegistry, mockPersonNoteService, mockGroupRegistry, mockDebug
     );
 
     const journal: JournalDefinition = {
@@ -164,7 +170,7 @@ describe('JournalResolver', () => {
     mockUserRegistry.getCurrentUser.mockReturnValue(null);
 
     const resolver = new JournalResolver(
-      mockApp, settings, mockUserRegistry, mockPersonNoteService, mockGroupRegistry
+      mockApp, settings, mockUserRegistry, mockPersonNoteService, mockGroupRegistry, mockDebug
     );
 
     const journal: JournalDefinition = {
@@ -185,7 +191,7 @@ describe('JournalResolver', () => {
     });
 
     const resolver = new JournalResolver(
-      mockApp, settings, mockUserRegistry, mockPersonNoteService, mockGroupRegistry
+      mockApp, settings, mockUserRegistry, mockPersonNoteService, mockGroupRegistry, mockDebug
     );
 
     const available = resolver.getAvailableJournals();

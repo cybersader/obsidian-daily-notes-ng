@@ -121,7 +121,11 @@ export const DEFAULT_SETTINGS: DailyNotesNGSettings = {
     personNotesFolder: '',
     groupNotesFolder: '',
   },
-  debug: false,
+  debug: {
+    enabled: false,
+    consoleOutput: true,
+    categories: {},
+  },
 };
 
 /**

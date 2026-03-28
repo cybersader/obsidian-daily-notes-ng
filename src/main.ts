@@ -38,7 +38,9 @@ export default class DailyNotesNGPlugin extends Plugin {
 
   async onload(): Promise<void> {
     await this.loadSettings();
-    this.debug = new DebugLog(this.app, this.settings.debug);
+    this.debug = new DebugLog(this.app, this.settings.debug.enabled);
+    this.debug.setConsoleOutput(this.settings.debug.consoleOutput);
+    this.debug.setCategories(this.settings.debug.categories);
 
     // Initialize identity system
     this.deviceManager = new DeviceIdentityManager();
@@ -51,7 +53,7 @@ export default class DailyNotesNGPlugin extends Plugin {
     // Journal resolver (replaces PeriodicConfigResolver)
     this.journalResolver = new JournalResolver(
       this.app, this.settings, this.userRegistry,
-      this.personNoteService, this.groupRegistry
+      this.personNoteService, this.groupRegistry, this.debug
     );
 
     // Initialize template system
@@ -126,6 +128,31 @@ export default class DailyNotesNGPlugin extends Plugin {
 
   async onunload(): Promise<void> {}
 
+  /**
+   * Called by Obsidian when another device syncs plugin settings (data.json).
+   * Reloads journals and identity so changes from other devices take effect
+   * without requiring a full plugin restart.
+   */
+  async onExternalSettingsChange(): Promise<void> {
+    await this.debug.log('Plugin', 'External settings change detected (Obsidian Sync)');
+    await this.loadSettings();
+    this.debug.setEnabled(this.settings.debug.enabled);
+    this.debug.setConsoleOutput(this.settings.debug.consoleOutput);
+    this.debug.setCategories(this.settings.debug.categories);
+    // Update refs that hold settings pointer
+    this.userRegistry = new UserRegistry(this.settings, this.deviceManager);
+    this.personNoteService = new PersonNoteService(this.app, this.settings);
+    this.groupRegistry = new GroupRegistry(this.app, this.settings);
+    this.journalResolver = new JournalResolver(
+      this.app, this.settings, this.userRegistry,
+      this.personNoteService, this.groupRegistry, this.debug
+    );
+    await this.debug.log('Plugin', 'Settings reloaded after sync', {
+      journals: this.settings.journals.length,
+      journalNames: this.settings.journals.map(j => j.name),
+    });
+  }
+
   async activateCalendarView(): Promise<void> {
     const existing = this.app.workspace.getLeavesOfType(CALENDAR_VIEW_TYPE);
     if (existing.length > 0) {
@@ -142,6 +169,11 @@ export default class DailyNotesNGPlugin extends Plugin {
   async loadSettings(): Promise<void> {
     const saved = (await this.loadData()) as any;
     let settings = deepMerge(DEFAULT_SETTINGS, saved as Partial<DailyNotesNGSettings>);
+
+    // Migration: debug setting changed from boolean to object
+    if (typeof saved?.debug === 'boolean') {
+      settings.debug = { enabled: saved.debug, consoleOutput: true, categories: {} };
+    }
 
     // Migration: convert old periodic format to journals
     if (saved?.periodic && !saved?.journals) {

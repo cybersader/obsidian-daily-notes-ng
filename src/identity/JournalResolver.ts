@@ -4,12 +4,11 @@ import type { Periodicity } from '../periodic/periodicity';
 import type { UserRegistry } from './UserRegistry';
 import type { PersonNoteService } from './PersonNoteService';
 import type { GroupRegistry } from './GroupRegistry';
+import type { DebugLog } from '../utils/debug';
 
 /**
  * Resolves which journals are available to the current device/user,
  * and handles {{person}} interpolation in folder paths.
- *
- * Replaces PeriodicConfigResolver with journal-aware logic.
  */
 export class JournalResolver {
   constructor(
@@ -17,43 +16,82 @@ export class JournalResolver {
     private settings: DailyNotesNGSettings,
     private userRegistry: UserRegistry,
     private personNoteService: PersonNoteService,
-    private groupRegistry: GroupRegistry
+    private groupRegistry: GroupRegistry,
+    private debug: DebugLog
   ) {}
 
   /**
    * Get all journals available to the current device/user.
-   * Global journals are always available.
-   * Person journals only for the registered person.
-   * Group journals for group members.
-   * When identity is disabled, only global journals are returned.
    */
   getAvailableJournals(): JournalDefinition[] {
     const currentUser = this.settings.identity.enabled
       ? this.userRegistry.getCurrentUser()
       : null;
 
-    return this.settings.journals.filter(j => {
-      if (!j.enabled) return false;
-      if (j.scope === 'global') return true;
+    const all = this.settings.journals;
+    const available: JournalDefinition[] = [];
+    const rejected: { name: string; reason: string }[] = [];
 
-      if (!this.settings.identity.enabled || !currentUser) return false;
+    for (const j of all) {
+      if (!j.enabled) {
+        rejected.push({ name: j.name, reason: 'disabled' });
+        continue;
+      }
+      if (j.scope === 'global') {
+        available.push(j);
+        continue;
+      }
+
+      if (!this.settings.identity.enabled || !currentUser) {
+        rejected.push({ name: j.name, reason: `identity off or no user (scope: ${j.scope})` });
+        continue;
+      }
 
       if (j.scope === 'person') {
-        return j.ownerPath === currentUser;
+        if (j.ownerPath === currentUser) {
+          available.push(j);
+        } else {
+          rejected.push({ name: j.name, reason: `person mismatch: owner=${j.ownerPath}, currentUser=${currentUser}` });
+        }
+        continue;
       }
+
       if (j.scope === 'group' && j.ownerPath) {
         const members = this.groupRegistry.resolveGroupToPersons(j.ownerPath);
-        return members.includes(currentUser);
+        if (members.includes(currentUser)) {
+          available.push(j);
+        } else {
+          rejected.push({ name: j.name, reason: `not in group ${j.ownerPath}, members: [${members.join(', ')}]` });
+        }
+        continue;
       }
-      return false;
+
+      rejected.push({ name: j.name, reason: 'unknown scope or missing owner' });
+    }
+
+    this.debug.log('JournalResolver', 'getAvailableJournals', {
+      totalJournals: all.length,
+      available: available.map(j => `${j.name} (${j.scope})`),
+      rejected,
+      currentUser,
+      identityEnabled: this.settings.identity.enabled,
     });
+
+    return available;
   }
 
   /**
    * Get available journals filtered by periodicity.
    */
   getJournalsForPeriodicity(periodicity: Periodicity): JournalDefinition[] {
-    return this.getAvailableJournals().filter(j => j.periodicity === periodicity);
+    const journals = this.getAvailableJournals().filter(j => j.periodicity === periodicity);
+
+    this.debug.log('JournalResolver', `getJournalsForPeriodicity(${periodicity})`, {
+      count: journals.length,
+      names: journals.map(j => j.name),
+    });
+
+    return journals;
   }
 
   /**
@@ -61,6 +99,7 @@ export class JournalResolver {
    */
   resolveFolder(journal: JournalDefinition): string {
     let folder = journal.folder;
+    const originalFolder = folder;
 
     if (this.settings.identity.enabled) {
       const currentUserPath = this.userRegistry.getCurrentUser();
@@ -69,6 +108,8 @@ export class JournalResolver {
         if (file instanceof TFile) {
           const prefs = this.personNoteService.getPreferences(file);
           folder = folder.replace(/\{\{person\}\}/g, prefs.displayName);
+        } else {
+          this.debug.warn('JournalResolver', `Person note file not found: ${currentUserPath}`);
         }
       }
     }
@@ -78,7 +119,17 @@ export class JournalResolver {
     folder = folder.replace(/\/\//g, '/');
     if (folder.endsWith('/')) folder = folder.slice(0, -1);
 
-    return normalizePath(folder);
+    const resolved = normalizePath(folder);
+
+    if (folder !== originalFolder) {
+      this.debug.log('JournalResolver', 'resolveFolder interpolation', {
+        journal: journal.name,
+        original: originalFolder,
+        resolved,
+      });
+    }
+
+    return resolved;
   }
 
   /**
@@ -103,9 +154,16 @@ export class JournalResolver {
     for (const journal of this.getAvailableJournals()) {
       const folder = this.resolveFolder(journal);
       if (filePath.startsWith(folder + '/')) {
+        this.debug.log('JournalResolver', 'identifyJournal match', {
+          filePath,
+          journal: journal.name,
+          folder,
+        });
         return journal;
       }
     }
+
+    this.debug.log('JournalResolver', 'identifyJournal: no match', { filePath });
     return null;
   }
 }
