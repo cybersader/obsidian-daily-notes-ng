@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.13] - 2026-03-28
+
+### Added
+- Debug logging system: dual file/console output, write queue, per-category filtering
+- Category groups in debug settings: Core, Identity, Templates, Other
+- Comprehensive trace logging in JournalResolver, PeriodicNoteManager, NavigationCommands
+- onExternalSettingsChange: plugin reloads journals when Obsidian Sync updates data.json
+- Debug settings UI: master toggle, console toggle, category filters, clear log button
+
+### Fixed
+- Obsidian Sync: journals from other devices now load without restart
+- Debug settings migration: old boolean format auto-converts to new object format
+
 ## [0.1.12] - 2026-03-26
 
 ### Improved
