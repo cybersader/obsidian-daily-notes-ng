@@ -193,7 +193,7 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
 
   private renderJournalCard(containerEl: HTMLElement, journal: JournalDefinition): void {
     const card = containerEl.createDiv('dnng-journal-card');
-    let collapsed = !journal.enabled;
+    let collapsed = true;
 
     // ── Header (always visible) ──────────────────
     const header = card.createDiv('dnng-journal-card-header');
