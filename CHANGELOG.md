@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.15] - 2026-03-28
+
+### Changed
+- All journal cards start collapsed in settings (click to expand)
+
 ## [0.1.14] - 2026-03-28
 
 ### Added
