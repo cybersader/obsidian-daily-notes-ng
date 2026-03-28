@@ -8,6 +8,10 @@ export default defineConfig({
     starlight({
       title: 'Daily Notes NG',
       description: 'Next-generation daily notes plugin for Obsidian',
+      favicon: '/obsidian-daily-notes-ng/favicon.svg',
+      head: [
+        { tag: 'link', attrs: { rel: 'icon', href: '/obsidian-daily-notes-ng/favicon.svg', type: 'image/svg+xml' } },
+      ],
       logo: {
         dark: './src/assets/logo-dark.svg',
         light: './src/assets/logo-light.svg',
