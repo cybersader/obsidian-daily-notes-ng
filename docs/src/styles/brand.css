@@ -6,11 +6,27 @@
   --sl-color-accent: #7c3aed;
   --sl-color-accent-high: #c4b5fd;
 
-  --sl-hue-purple: 263;
+  /* Brand color for nav logo + title (consistent in both themes) */
+  --dnng-brand: #D3A7F7;
+  --dnng-brand-light: #7c3aed;
 }
 
-/* Header logo inherits text color via currentColor SVG */
-.site-title svg {
+/* Nav: logo + title use brand purple consistently */
+[data-theme="dark"] .site-title,
+:root:not([data-theme="light"]) .site-title {
+  color: var(--dnng-brand);
+}
+
+[data-theme="light"] .site-title {
+  color: var(--dnng-brand-light);
+}
+
+.site-title a {
+  color: inherit;
+}
+
+/* Header logo sizing */
+.site-title img {
   width: 1.5em;
   height: 1.5em;
 }
