@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.17] - 2026-03-28
+
+### Added
+- Lucide icons on all 11 navigation commands (calendar-check, chevron-left/right)
+- Mobile toolbar settings section with guided setup modal (visible on mobile only)
+- Journal icon field in settings card with live Lucide icon preview
+- Icons render in command palette, mobile toolbar, and ribbon menu
+
 ## [0.1.16] - 2026-03-28
 
 ### Added
