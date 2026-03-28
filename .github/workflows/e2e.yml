@@ -1,0 +1,41 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'test/e2e/**'
+      - 'wdio.conf.mts'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build plugin
+        run: bun run build
+
+      - name: Run E2E tests
+        run: bun run e2e
+        env:
+          OBSIDIAN_VERSIONS: "latest"
+
+      - name: Upload screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots
+          path: ./test-results/

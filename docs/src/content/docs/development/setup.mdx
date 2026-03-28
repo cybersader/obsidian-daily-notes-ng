@@ -38,7 +38,7 @@ obsidian-daily-notes-ng/
 │   ├── compat/                   # Periodic Notes migration
 │   └── utils/                    # Debug logging, deep merge
 ├── tests/                        # Unit tests (Bun test runner)
-├── e2e/                          # E2E tests (Playwright + CDP)
+├── test/e2e/                     # E2E tests (wdio-obsidian-service)
 ├── dnng-test-vault/              # Embedded test vault
 ├── docs/                         # This documentation (Astro Starlight)
 ├── .claude/                      # Agent instructions and skills
@@ -56,7 +56,7 @@ obsidian-daily-notes-ng/
 | `bun test` | Run unit tests |
 | `bun test --watch` | Run tests in watch mode |
 | `bun run lint` | ESLint with obsidian-plugin rules |
-| `bun run e2e` | Run Playwright E2E tests |
+| `bun run e2e` | Run E2E tests (wdio-obsidian-service) |
 | `bun run build:test` | Build + deploy to test vault |
 
 ## Development mode
@@ -80,7 +80,7 @@ $OBS vault=dnng-test-vault plugin:reload id=daily-notes-ng
 | **esbuild** | Bundler (CJS format, ES2018 target) |
 | **TypeScript** | Language (strict mode) |
 | **ESLint 9** | Linting with `eslint-plugin-obsidianmd` for community plugin compliance |
-| **Playwright** | E2E testing via Chrome DevTools Protocol |
+| **wdio-obsidian-service** | E2E testing with sandboxed Obsidian instances |
 | **Astro Starlight** | Documentation site |
 | **chrono-node** | Natural language date parsing (only runtime dependency) |
 

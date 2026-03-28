@@ -5,13 +5,13 @@ sidebar:
   order: 3
 ---
 
-Daily Notes NG uses a multi-layered testing strategy combining unit tests, Obsidian CLI automation, and E2E tests via Playwright.
+Daily Notes NG uses a multi-layered testing strategy combining unit tests, Obsidian CLI automation, and E2E tests via [wdio-obsidian-service](https://github.com/jesse-r-s-hines/wdio-obsidian-service).
 
 ## Testing layers
 
 ```mermaid
 graph TD
-    E2E["Layer 3: E2E — Playwright + CDP<br/>Full UI automation against running Obsidian<br/><i>e2e/daily-notes-ng.spec.ts</i>"]
+    E2E["Layer 3: E2E — wdio-obsidian-service<br/>Full UI automation with sandboxed Obsidian<br/><i>test/e2e/**/*.spec.ts</i>"]
     CLI["Layer 2: CLI Integration<br/>Obsidian CLI commands against live vault<br/><i>Build → reload → execute → inspect → screenshot</i>"]
     Unit["Layer 1: Unit Tests — Bun<br/>Pure logic tests with mocked Obsidian API<br/><i>tests/**/*.test.ts</i>"]
 
@@ -85,16 +85,6 @@ $OBS vault=dnng-test-vault eval \
 $OBS vault=dnng-test-vault dev:errors
 ```
 
-Or as a one-liner:
-
-```bash
-bun run build && node copy-files.mjs && \
-  $OBS vault=dnng-test-vault plugin:reload id=daily-notes-ng && \
-  sleep 1 && \
-  $OBS vault=dnng-test-vault eval \
-    "code=app.commands.executeCommandById('daily-notes-ng:open-today')"
-```
-
 ### Useful CLI commands for testing
 
 ```bash
@@ -105,9 +95,6 @@ $OBS vault=dnng-test-vault eval \
 # List all files in vault
 $OBS vault=dnng-test-vault files
 
-# List files in a folder
-$OBS vault=dnng-test-vault files folder=Test-Journal/Daily
-
 # Read a specific note
 $OBS vault=dnng-test-vault read path="Test-Journal/Daily/2026-03-24.md"
 
@@ -116,9 +103,6 @@ $OBS vault=dnng-test-vault dev:screenshot
 
 # Check console errors
 $OBS vault=dnng-test-vault dev:errors
-
-# Check console output
-$OBS vault=dnng-test-vault dev:console limit=10
 
 # List registered commands
 $OBS vault=dnng-test-vault commands | grep daily-notes-ng
@@ -131,31 +115,61 @@ $OBS vault=dnng-test-vault commands | grep daily-notes-ng
 $OBS vault=dnng-test-vault eval \
   "code=app.plugins.plugins['daily-notes-ng'].userRegistry.getCurrentUser() ?? 'not registered'"
 
-# Check device ID
-$OBS vault=dnng-test-vault eval \
-  "code=app.plugins.plugins['daily-notes-ng'].deviceManager.getOrCreateDeviceId()"
-
 # Inspect all device mappings
 $OBS vault=dnng-test-vault eval \
   "code=JSON.stringify(app.plugins.plugins['daily-notes-ng'].settings.identity.deviceUserMappings, null, 2)"
 ```
 
-## Layer 3: E2E tests (Playwright)
+## Layer 3: E2E tests (wdio-obsidian-service)
 
-For automated UI testing against a running Obsidian instance via Chrome DevTools Protocol:
+[wdio-obsidian-service](https://github.com/jesse-r-s-hines/wdio-obsidian-service) is a WebDriverIO service purpose-built for Obsidian plugin testing. It automatically downloads Obsidian, runs tests in a sandboxed environment, and supports multi-version testing.
+
+### Why wdio over Playwright?
+
+| Feature | wdio-obsidian-service | Playwright CDP |
+|---------|----------------------|----------------|
+| Setup | `bun add` + config file | Custom 229-line launcher |
+| Obsidian download | Automatic | Manual binary detection |
+| Multi-version testing | Built-in (`OBSIDIAN_VERSIONS` env) | Not supported |
+| Vault isolation | Sandboxed per run | Manual |
+| Trust dialog | Automatic | Custom click logic |
+| Command execution | `browser.executeObsidianCommand()` | eval hacks |
+| CI/CD | Templates included | DIY |
+
+### Running E2E tests
 
 ```bash
-# Launch Obsidian with debug port
-bash e2e-launch.sh
-
-# Run E2E tests
+# Run all E2E tests
 bun run e2e
+
+# Run against specific Obsidian versions
+OBSIDIAN_VERSIONS="1.5.0,1.6.0,latest" bun run e2e
 ```
 
-E2E tests live in `e2e/` and use a custom launcher (`e2e/obsidian.ts`) that:
-- Detects the Obsidian binary (cross-platform: Windows, macOS, Linux, WSL2)
-- Connects via CDP on port 9333
-- Provides helpers: `runCommand()`, `waitForNotice()`
+### Writing E2E tests
+
+Tests live in `test/e2e/` and use Mocha + WebDriverIO syntax:
+
+```typescript
+describe('Daily Notes NG', () => {
+  it('can open today\'s daily note', async () => {
+    await browser.executeObsidianCommand('daily-notes-ng:open-today');
+    await browser.waitUntil(async () => {
+      const title = await $('.view-header-title');
+      return await title.isDisplayed();
+    }, { timeout: 10000 });
+    const title = await $('.view-header-title');
+    await expect(title).toBeDisplayed();
+  });
+
+  it('settings tab renders', async () => {
+    await browser.executeObsidianCommand('app:open-settings');
+    const modal = await $('.modal');
+    await expect(modal).toBeDisplayed();
+    await browser.keys(['Escape']);
+  });
+});
+```
 
 ### When to use E2E vs CLI
 
@@ -164,10 +178,11 @@ E2E tests live in `e2e/` and use a custom launcher (`e2e/obsidian.ts`) that:
 | Verify a command works | CLI (`eval + executeCommandById`) |
 | Check file was created correctly | CLI (`read`) |
 | Inspect settings at runtime | CLI (`eval`) |
-| Test modal interactions | E2E (Playwright) |
-| Test drag-and-drop in calendar | E2E (Playwright) |
+| Test modal interactions | E2E (wdio) |
+| Test drag-and-drop in calendar | E2E (wdio) |
 | Screenshot for documentation | CLI (`dev:screenshot`) |
-| Automated regression suite | E2E (Playwright) |
+| Automated regression suite in CI | E2E (wdio) |
+| Multi-version compatibility | E2E (wdio) |
 
 ## Test fixtures plugin
 
@@ -196,13 +211,7 @@ When working with AI coding assistants (Claude Code, etc.), the recommended work
 6. Agent reads result and iterates
 ```
 
-This enables a fully autonomous **build-reload-test** loop without human interaction for most changes. The agent can:
-
-- Generate test fixtures, verify they exist via CLI
-- Execute plugin commands and inspect results
-- Take screenshots to verify UI changes
-- Read file contents to verify note creation
-- Check plugin settings at runtime
+This enables a fully autonomous **build-reload-test** loop without human interaction for most changes.
 
 ### Agent-specific tips
 
@@ -215,7 +224,6 @@ This enables a fully autonomous **build-reload-test** loop without human interac
 ## Continuous integration
 
 GitHub Actions runs on every push to `main`:
-- **Plugin release** (`.github/workflows/release.yml`): Builds on tag push, creates GitHub release
+- **Plugin release** (`.github/workflows/release.yml`): Auto-detects version change, builds, tags, releases
 - **Docs deploy** (`.github/workflows/deploy-docs.yml`): Builds Starlight, deploys to GitHub Pages
-
-Unit tests can be added to CI. E2E tests require a running Obsidian instance, so they're local-only.
+- **E2E tests** (`.github/workflows/e2e.yml`): Runs wdio-obsidian-service against latest Obsidian
