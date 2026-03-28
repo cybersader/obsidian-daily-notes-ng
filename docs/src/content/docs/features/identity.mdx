@@ -24,24 +24,17 @@ Journal/Daily/
 
 Daily Notes NG assigns each device a unique ID and maps it to a [person note](/obsidian-daily-notes-ng/concepts/glossary/#person-note). From that mapping, the plugin resolves per-person folders, templates, and creator attribution.
 
-```
-                ┌─────────────┐
-                │ Alice's Mac │
-                │ Device ID:  │
-                │  abc-123    │──────┐
-                └─────────────┘      │    ┌──────────────────┐
-                                     ├───→│ Person Note:     │
-                ┌─────────────┐      │    │ Alice Smith.md   │
-                │ Alice's iPad│      │    │ type: person     │
-                │ Device ID:  │──────┘    │ periodic:        │
-                │  def-456    │           │   daily:          │
-                └─────────────┘           │     folder: ...  │
-                                          └──────────────────┘
-                ┌─────────────┐
-                │ Bob's PC    │           ┌──────────────────┐
-                │ Device ID:  │──────────→│ Person Note:     │
-                │  ghi-789    │           │ Bob Jones.md     │
-                └─────────────┘           └──────────────────┘
+```mermaid
+graph LR
+    A1["Alice's Mac<br/>ID: abc-123"] --> Alice["Person Note:<br/>Alice Smith.md<br/><i>type: person</i>"]
+    A2["Alice's iPad<br/>ID: def-456"] --> Alice
+    B1["Bob's PC<br/>ID: ghi-789"] --> Bob["Person Note:<br/>Bob Jones.md<br/><i>type: person</i>"]
+
+    style Alice fill:#7c3aed,color:#fff
+    style Bob fill:#7c3aed,color:#fff
+    style A1 fill:#2d1854,color:#c4b5fd
+    style A2 fill:#2d1854,color:#c4b5fd
+    style B1 fill:#2d1854,color:#c4b5fd
 ```
 
 Result:
@@ -164,15 +157,18 @@ Use groups for:
 
 The identity system controls **which journals each device can see**. The [journal resolver](/obsidian-daily-notes-ng/concepts/glossary/#journal-resolver) filters the journal list:
 
-```
-All journals in vault
-  │
-  ├── Global journals      → always visible
-  ├── Person journals      → visible only if ownerPath matches registered user
-  └── Group journals       → visible only if registered user is a group member
+```mermaid
+flowchart LR
+    All["All journals"] --> Global["Global<br/>Always visible"]
+    All --> Person["Person<br/>Visible if ownerPath<br/>matches registered user"]
+    All --> Group["Group<br/>Visible if user is<br/>a group member"]
+    All --> Off{"Identity<br/>disabled?"}
+    Off -->|Yes| OnlyGlobal["Only global<br/>journals shown"]
 
-Identity disabled?
-  → only global journals shown
+    style Global fill:#059669,color:#fff
+    style Person fill:#7c3aed,color:#fff
+    style Group fill:#2563eb,color:#fff
+    style OnlyGlobal fill:#d97706,color:#fff
 ```
 
 This is simpler than a layered override system — each journal is a complete, standalone definition. If Alice needs different settings than the global "Daily" journal, she creates her own person-scoped "Alice daily" journal with its own folder and template.

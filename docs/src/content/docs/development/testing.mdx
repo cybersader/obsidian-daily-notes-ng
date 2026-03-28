@@ -9,20 +9,17 @@ Daily Notes NG uses a multi-layered testing strategy combining unit tests, Obsid
 
 ## Testing layers
 
-```
-┌────────────────────────────────────────────────┐
-│          Layer 3: E2E (Playwright + CDP)       │
-│  Full UI automation against running Obsidian   │
-│  e2e/daily-notes-ng.spec.ts                    │
-├────────────────────────────────────────────────┤
-│          Layer 2: CLI Integration              │
-│  Obsidian CLI commands against live vault      │
-│  Build → reload → execute → inspect → screenshot│
-├────────────────────────────────────────────────┤
-│          Layer 1: Unit Tests (Bun)             │
-│  Pure logic tests with mocked Obsidian API     │
-│  tests/**/*.test.ts                            │
-└────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    E2E["Layer 3: E2E — Playwright + CDP<br/>Full UI automation against running Obsidian<br/><i>e2e/daily-notes-ng.spec.ts</i>"]
+    CLI["Layer 2: CLI Integration<br/>Obsidian CLI commands against live vault<br/><i>Build → reload → execute → inspect → screenshot</i>"]
+    Unit["Layer 1: Unit Tests — Bun<br/>Pure logic tests with mocked Obsidian API<br/><i>tests/**/*.test.ts</i>"]
+
+    E2E --> CLI --> Unit
+
+    style E2E fill:#991b1b,color:#fff
+    style CLI fill:#d97706,color:#fff
+    style Unit fill:#059669,color:#fff
 ```
 
 ## Layer 1: Unit tests

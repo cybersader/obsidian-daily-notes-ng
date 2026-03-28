@@ -53,6 +53,13 @@ a {
   border-color: var(--sl-color-accent-low);
 }
 
+/* Mermaid diagrams */
+pre:has(> code.language-mermaid) {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
 /* Badge styling in content */
 .badge {
   background: var(--sl-color-accent-low);

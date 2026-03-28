@@ -7,103 +7,92 @@ sidebar:
 
 ## Module map
 
-```
-┌──────────────────────────────────────────────────────────┐
-│                    DailyNotesNGPlugin                     │
-│                      (src/main.ts)                        │
-├──────────────────────────────────────────────────────────┤
-│                                                          │
-│  settings.journals: JournalDefinition[]                  │
-│    Each journal: name, periodicity, folder, template,    │
-│                  scope (global/person/group), owner       │
-│                                                          │
-│  ┌─────────────────┐   ┌─────────────────┐              │
-│  │ PeriodicNote     │   │ CalendarView    │              │
-│  │ Manager          │   │ (ItemView)      │              │
-│  │ Creates/opens    │   │ Month grid      │              │
-│  │ notes per journal│   │ sidebar         │              │
-│  └────────┬────────┘   └─────────────────┘              │
-│           │                                              │
-│           ▼                                              │
-│  ┌─────────────────┐                                     │
-│  │ Journal          │ ◄── Filters journals by scope      │
-│  │ Resolver         │     for current device/user        │
-│  └────────┬────────┘                                     │
-│           │                                              │
-│     ┌─────┴──────┬──────────────┬──────────────┐        │
-│     ▼            ▼              ▼              ▼        │
-│  ┌────────┐ ┌──────────┐ ┌──────────┐ ┌────────────┐   │
-│  │Device  │ │Person    │ │User      │ │Group       │   │
-│  │Identity│ │Note      │ │Registry  │ │Registry    │   │
-│  │Manager │ │Service   │ │(mapping) │ │(members)   │   │
-│  └────────┘ └──────────┘ └──────────┘ └────────────┘   │
-│                                                          │
-│  ┌─────────────────┐ ┌─────────────────┐                │
-│  │ TemplateEngine   │ │ TemplaterBridge │                │
-│  │ (built-in vars)  │ │ (delegates when │                │
-│  │                  │ │  trigger is on) │                │
-│  └─────────────────┘ └─────────────────┘                │
-│                                                          │
-│  ┌──────────┐ ┌──────────────┐ ┌──────────────────┐     │
-│  │ Todo     │ │ Frontmatter  │ │ DateSuggest      │     │
-│  │ Rollover │ │ DateTracker  │ │ (EditorSuggest)  │     │
-│  └──────────┘ └──────────────┘ └──────────────────┘     │
-│                                                          │
-│  ┌──────────────────────────────────┐                    │
-│  │ NavigationCommands               │                    │
-│  │ Journal-aware: picker when       │                    │
-│  │ multiple journals match          │                    │
-│  └──────────────────────────────────┘                    │
-└──────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    Plugin["DailyNotesNGPlugin<br/><i>src/main.ts</i>"]
+    Journals["settings.journals: JournalDefinition[]<br/>name, periodicity, folder, template, scope, owner"]
+
+    Plugin --> Journals
+    Plugin --> PM["PeriodicNoteManager<br/>Creates/opens notes per journal"]
+    Plugin --> CV["CalendarView<br/>Month grid sidebar"]
+    Plugin --> Nav["NavigationCommands<br/>Journal picker when multiple match"]
+    PM --> JR["JournalResolver<br/>Filters journals by scope for current device/user"]
+    JR --> DIM["DeviceIdentityManager"]
+    JR --> PNS["PersonNoteService"]
+    JR --> UR["UserRegistry<br/>device-to-user mapping"]
+    JR --> GR["GroupRegistry<br/>group members"]
+    Plugin --> TE["TemplateEngine<br/>built-in vars"]
+    Plugin --> TB["TemplaterBridge<br/>delegates when trigger is on"]
+    Plugin --> TR["TodoRollover"]
+    Plugin --> FT["FrontmatterDateTracker"]
+    Plugin --> DS["DateSuggest<br/>EditorSuggest"]
+
+    style Plugin fill:#7c3aed,color:#fff
+    style Journals fill:#2d1854,color:#c4b5fd
+    style JR fill:#5b21b6,color:#fff
 ```
 
 ## Data flow: creating a periodic note
 
 When a user triggers "Open today's daily note":
 
-```
-1. NavigationCommands
-   → asks JournalResolver.getJournalsForPeriodicity('daily')
-   → if 1 result: use it directly
-   → if 2+: show JournalPickerModal, user picks one
+```mermaid
+sequenceDiagram
+    actor User
+    participant Nav as NavigationCommands
+    participant JR as JournalResolver
+    participant Picker as JournalPickerModal
+    participant PM as PeriodicNoteManager
+    participant TE as Template Engine
 
-2. PeriodicNoteManager.openPeriodicNote(date, journal)
-   → asks JournalResolver.resolveFolder(journal)
-   → interpolates {{person}} in folder path
+    User->>Nav: Open today's daily note
+    Nav->>JR: getJournalsForPeriodicity('daily')
+    JR-->>Nav: available journals
 
-3. PeriodicNoteManager (continued)
-   → checks if note exists (both flat + folder-note paths)
-   → if exists: ensures .base MOC, opens the note
-   → if not: creates folder, applies template, adds creator
-     attribution, generates note UUID, opens the note
+    alt 1 journal
+        Nav->>PM: openPeriodicNote(date, journal)
+    else 2+ journals
+        Nav->>Picker: show picker
+        Picker-->>Nav: user picks one
+        Nav->>PM: openPeriodicNote(date, journal)
+    end
 
-4. Template processing
-   → if Templater installed + trigger_on_file_creation: delegates
-   → otherwise: built-in engine resolves {{title}}, {{date}},
-     {{time}}, {{person}}
+    PM->>JR: resolveFolder(journal)
+    Note over JR: Interpolates person in path
+    JR-->>PM: resolved folder path
+
+    alt Note exists
+        PM->>PM: ensure .base MOC
+        PM->>User: open note
+    else New note
+        PM->>PM: create folder
+        PM->>TE: process template
+        PM->>PM: add creator + UUID
+        PM->>User: open note
+    end
 ```
 
 ## Journal resolution flow
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                   JournalResolver                        │
-│                                                         │
-│  Input: settings.journals (all journal definitions)     │
-│                                                         │
-│  Filter by enabled:                                     │
-│    → skip disabled journals                             │
-│                                                         │
-│  Filter by scope:                                       │
-│    → global: always included                            │
-│    → person: only if ownerPath matches current user     │
-│    → group: only if current user is in group members    │
-│                                                         │
-│  When identity disabled:                                │
-│    → only global journals returned                      │
-│                                                         │
-│  Output: JournalDefinition[] available to this device   │
-└─────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    Input["All journals in settings"] --> Enabled{"Enabled?"}
+    Enabled -->|No| Skip["Skip"]
+    Enabled -->|Yes| Scope{"Scope?"}
+    Scope -->|Global| Include["Include"]
+    Scope -->|Person| PersonCheck{"ownerPath matches<br/>current user?"}
+    Scope -->|Group| GroupCheck{"Current user in<br/>group members?"}
+    PersonCheck -->|Yes| Include
+    PersonCheck -->|No| Skip
+    GroupCheck -->|Yes| Include
+    GroupCheck -->|No| Skip
+    Scope -->|Identity disabled| GlobalOnly["Only global journals"]
+    Include --> Output["Available journals<br/>for this device"]
+    GlobalOnly --> Output
+
+    style Input fill:#2d1854,color:#c4b5fd
+    style Output fill:#7c3aed,color:#fff
+    style Skip fill:#991b1b,color:#fff
 ```
 
 ## Storage layers

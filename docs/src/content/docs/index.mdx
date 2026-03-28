@@ -54,22 +54,19 @@ Your journals:
 
 ## Architecture
 
-```
-┌──────────────────────────────────────────────────────┐
-│                  Daily Notes NG                       │
-├──────────────────────────────────────────────────────┤
-│  Journals: [Personal, Work standup, HQ bulletin, ...]│
-│  Each with: folder, template, periodicity, scope     │
-├──────────────┬───────────────┬───────────────────────┤
-│  Journal     │  Calendar     │  Navigation           │
-│  Resolver    │  Sidebar      │  Commands + Picker    │
-├──────────────┴───────────────┴───────────────────────┤
-│            Identity System (optional)                 │
-│  Device ID → Person Note → Scope filtering           │
-│  Group resolution → Creator attribution              │
-├──────────────────────────────────────────────────────┤
-│  Templates │ Todo Rollover │ Frontmatter │ NLP Dates │
-└──────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    DNNG["Daily Notes NG"]
+    DNNG --> J["Journals<br/><i>Personal, Work standup, HQ bulletin, ...</i>"]
+    J --> JR["Journal Resolver"]
+    J --> Cal["Calendar Sidebar"]
+    J --> Nav["Navigation + Picker"]
+    DNNG --> ID["Identity System <i>(optional)</i><br/>Device ID → Person Note → Scope filtering"]
+    DNNG --> Extras["Templates · Todo Rollover · Frontmatter · NLP Dates"]
+
+    style DNNG fill:#7c3aed,color:#fff
+    style J fill:#5b21b6,color:#fff
+    style ID fill:#2d1854,color:#c4b5fd
 ```
 
 ## For developers
