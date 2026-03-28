@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.16] - 2026-03-28
+
+### Added
+- Logo assets: 20 variations (PNG 32-512px, SVG color + mono, transparent bg)
+- Pretty README with centered logo, badges, feature table, BRAT install guide
+- Docs branding: logo in Starlight header + hero image
+- process-logos.py script for regenerating from source images
+
 ## [0.1.15] - 2026-03-28
 
 ### Changed
