@@ -222,3 +222,15 @@
   display: flex;
   justify-content: flex-end;
 }
+
+.dnng-icon-preview {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  color: var(--text-muted);
+}
+
+.dnng-icon-preview svg {
+  width: 20px;
+  height: 20px;
+}

@@ -16,6 +16,7 @@ export class NavigationCommands {
     this.plugin.addCommand({
       id: 'open-today',
       name: 'Open today\'s daily note',
+      icon: 'calendar-check',
       callback: () => {
         this.openForDate(today(), 'daily');
       },
@@ -28,6 +29,7 @@ export class NavigationCommands {
       this.plugin.addCommand({
         id: `open-prev-${periodicity}`,
         name: `Open previous ${label} note`,
+        icon: 'chevron-left',
         callback: () => {
           this.openRelative(periodicity, -1);
         },
@@ -36,6 +38,7 @@ export class NavigationCommands {
       this.plugin.addCommand({
         id: `open-next-${periodicity}`,
         name: `Open next ${label} note`,
+        icon: 'chevron-right',
         callback: () => {
           this.openRelative(periodicity, 1);
         },

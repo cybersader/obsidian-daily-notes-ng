@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, AbstractInputSuggest, TFile, ToggleComponent } from 'obsidian';
+import { App, PluginSettingTab, Setting, AbstractInputSuggest, TFile, ToggleComponent, Platform, Modal, getIcon } from 'obsidian';
 import type DailyNotesNGPlugin from '../main';
 import { ALL_PERIODICITIES, PERIODICITY_LABELS } from '../periodic/periodicity';
 import type { Periodicity } from '../periodic/periodicity';
@@ -161,6 +161,9 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
     this.renderFrontmatterSection(containerEl);
     this.renderNlpSection(containerEl);
     this.renderDebugSection(containerEl);
+    if (Platform.isMobile) {
+      this.renderMobileSection(containerEl);
+    }
   }
 
   private renderJournalsSection(containerEl: HTMLElement): void {
@@ -244,6 +247,27 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
           await this.plugin.saveSettings();
         })
       );
+
+    // Icon
+    const iconSetting = new Setting(content)
+      .setName('Icon')
+      .setDesc('Lucide icon name (e.g., book, notebook, pen-line). Browse at lucide.dev')
+      .addText((text) => {
+        text
+          .setPlaceholder('calendar')
+          .setValue(journal.icon ?? '')
+          .onChange(async (value) => {
+            journal.icon = value || undefined;
+            await this.plugin.saveSettings();
+            // Update preview
+            iconPreview.empty();
+            const iconEl = getIcon(value || 'calendar');
+            if (iconEl) iconPreview.appendChild(iconEl);
+          });
+      });
+    const iconPreview = iconSetting.controlEl.createDiv('dnng-icon-preview');
+    const initialIcon = getIcon(journal.icon || 'calendar');
+    if (initialIcon) iconPreview.appendChild(initialIcon);
 
     // Periodicity
     new Setting(content)
@@ -859,6 +883,48 @@ export class DailyNotesNGSettingsTab extends PluginSettingTab {
       .addButton((btn) =>
         btn.setButtonText('Clear').onClick(async () => {
           await this.plugin.debug.clear();
+        })
+      );
+  }
+
+  private renderMobileSection(containerEl: HTMLElement): void {
+    new Setting(containerEl).setName('Mobile quick access').setHeading();
+
+    new Setting(containerEl)
+      .setName('Set up mobile toolbar')
+      .setDesc('Get quick access to Daily Notes NG commands on mobile')
+      .addButton((btn) =>
+        btn.setButtonText('How to set up').onClick(() => {
+          const modal = new Modal(this.app);
+          modal.titleEl.setText('Mobile quick access');
+          const { contentEl } = modal;
+
+          contentEl.createEl('h3', { text: 'Ribbon menu (hamburger)' });
+          contentEl.createEl('p', {
+            text: 'The calendar icon is already in your ribbon menu. Tap the \u2261 menu at the bottom right to find it.',
+          });
+
+          contentEl.createEl('h3', { text: 'Keyboard toolbar' });
+          contentEl.createEl('p', {
+            text: 'To add commands to the keyboard toolbar above your keyboard:',
+          });
+          const steps = contentEl.createEl('ol');
+          steps.createEl('li', { text: 'Go to Settings \u2192 Toolbar' });
+          steps.createEl('li', { text: 'Tap the + button' });
+          steps.createEl('li', { text: 'Search for "Daily Notes"' });
+          steps.createEl('li', { text: 'Add "Open today\'s daily note" or other commands' });
+
+          contentEl.createEl('h3', { text: 'Reorder ribbon icons' });
+          contentEl.createEl('p', {
+            text: 'Settings \u2192 Appearance \u2192 Ribbon menu \u2014 drag to reorder.',
+          });
+
+          contentEl.createEl('h3', { text: 'Advanced: Commander plugin' });
+          contentEl.createEl('p', {
+            text: 'Install the Commander community plugin for full toolbar customization, custom menus, and swipe gestures.',
+          });
+
+          modal.open();
         })
       );
   }
