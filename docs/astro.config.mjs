@@ -16,27 +16,35 @@ export default defineConfig({
             return document.documentElement.dataset.theme === 'light' ? 'default' : 'dark';
           }
           function initMermaid() {
-            // Convert Starlight code blocks to mermaid-compatible format
-            document.querySelectorAll('code.language-mermaid').forEach(code => {
-              const pre = code.parentElement;
-              if (pre && pre.tagName === 'PRE') {
-                pre.classList.add('mermaid');
-                pre.textContent = code.textContent;
-              }
+            // Starlight uses Expressive Code which wraps mermaid in:
+            // <figure><pre data-language="mermaid"><code><div class="ec-line">...
+            // Extract the raw text and replace with a .mermaid div
+            document.querySelectorAll('pre[data-language="mermaid"]').forEach(pre => {
+              const figure = pre.closest('figure');
+              const target = figure || pre;
+              // Extract text from all ec-line spans
+              const lines = [];
+              pre.querySelectorAll('.ec-line .code').forEach(line => {
+                lines.push(line.textContent);
+              });
+              // Fallback: just get all text
+              const text = lines.length > 0 ? lines.join('\\n') : pre.textContent;
+              const div = document.createElement('div');
+              div.classList.add('mermaid');
+              div.textContent = text;
+              target.replaceWith(div);
             });
             mermaid.initialize({ startOnLoad: false, theme: getTheme() });
             mermaid.run({ querySelector: '.mermaid' });
           }
-          // Run after DOM ready
-          if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initMermaid);
-          } else {
-            initMermaid();
-          }
+          // Run after full page load (Expressive Code injects late)
+          window.addEventListener('load', initMermaid);
           // Re-render on theme change
           new MutationObserver(() => {
-            document.querySelectorAll('.mermaid svg').forEach(el => el.remove());
-            document.querySelectorAll('.mermaid').forEach(el => el.removeAttribute('data-processed'));
+            document.querySelectorAll('.mermaid[data-processed]').forEach(el => {
+              el.removeAttribute('data-processed');
+              el.innerHTML = el.dataset.original || el.textContent;
+            });
             mermaid.initialize({ startOnLoad: false, theme: getTheme() });
             mermaid.run({ querySelector: '.mermaid' });
           }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
