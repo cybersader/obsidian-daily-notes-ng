@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.18] - 2026-03-28
+
+### Fixed
+- Ribbon icon: renamed to "Daily Notes NG: Open today" (was generic "Open calendar")
+- Ribbon action now opens today's note directly instead of calendar stub
+- Icon changed to calendar-check (matches command palette)
+
 ## [0.1.17] - 2026-03-28
 
 ### Added
